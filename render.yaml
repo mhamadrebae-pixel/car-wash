@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: car-wash-pos
+    runtime: docker
+    plan: free
+    region: frankfurt
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
