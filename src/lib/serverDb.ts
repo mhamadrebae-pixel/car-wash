@@ -42,13 +42,22 @@ export interface DatabasePayload {
   version: string;
 }
 
-const DB_DIR = path.join(process.cwd(), 'data');
+const IS_VERCEL = !!process.env.VERCEL;
+const BUNDLED_DB_FILE = path.join(process.cwd(), 'data', 'carwash-db.json');
+const DB_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'carwash-db.json');
 
 // Ensure database directory exists
 function ensureDbDir() {
   if (!fs.existsSync(DB_DIR)) {
     fs.mkdirSync(DB_DIR, { recursive: true });
+  }
+  if (IS_VERCEL && !fs.existsSync(DB_FILE) && fs.existsSync(BUNDLED_DB_FILE)) {
+    try {
+      fs.copyFileSync(BUNDLED_DB_FILE, DB_FILE);
+    } catch (e) {
+      console.warn('Could not copy bundled DB to /tmp:', e);
+    }
   }
 }
 
