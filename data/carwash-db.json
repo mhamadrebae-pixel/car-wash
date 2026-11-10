@@ -1,0 +1,587 @@
+{
+  "vehicles": [
+    {
+      "id": "v-1794332568290",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "21",
+        "provinceName": "سلێمانی",
+        "letter": "A",
+        "number": "54865"
+      },
+      "ownerName": "کڕیاری بەڕێز",
+      "phone": "84994",
+      "carModel": "ئۆتۆمبێل",
+      "color": "دیاری نەکراو",
+      "size": "sedan",
+      "nfcTagId": "NFC-568290",
+      "hasNfcSticker": true,
+      "totalWashes": 0,
+      "currentCycleWashes": 0,
+      "freeWashesClaimed": 0,
+      "lastVisitDate": "2026-11-10T17:42:48.290Z",
+      "registeredDate": "2026-11-10T17:42:48.290Z",
+      "status": "active",
+      "currentBay": 1,
+      "bayEntryTime": "2026-11-10T17:42:48.290Z",
+      "washStage": "تەواوبوو",
+      "assignedWorkerId": "staff-1",
+      "assignedWorkerName": "وەستا ڕێبوار عەلی",
+      "washHistory": []
+    },
+    {
+      "id": "v-1794328664612",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "23",
+        "provinceName": "هەڵەبجە",
+        "letter": "G",
+        "number": "12456"
+      },
+      "ownerName": "محەمەد ڕێبەر",
+      "phone": "",
+      "carModel": "Nisan sentra",
+      "color": "سپی",
+      "size": "sedan",
+      "nfcTagId": "NFC-664612",
+      "hasNfcSticker": true,
+      "totalWashes": 2,
+      "currentCycleWashes": 2,
+      "freeWashesClaimed": 0,
+      "lastVisitDate": "2026-11-10T16:37:58.074Z",
+      "registeredDate": "2026-11-10T16:37:44.612Z",
+      "status": "active",
+      "washHistory": [
+        {
+          "id": "w-1794328678074",
+          "date": "2026-11-10T16:37:58.074Z",
+          "serviceId": "srv-2",
+          "serviceName": "شۆردنی تەواو VIP",
+          "price": 25000,
+          "isFree": false,
+          "vehicleSize": "sedan",
+          "staffId": "staff-1",
+          "staffName": "وەستا ڕێبوار عەلی",
+          "bayNumber": 1,
+          "paymentMethod": "cash",
+          "paymentStatus": "paid",
+          "workerCommission": 2000,
+          "isSubscriptionWash": false
+        },
+        {
+          "id": "w-1794328664612",
+          "date": "2026-11-10T16:37:44.612Z",
+          "serviceId": "srv-1",
+          "serviceName": "شۆردنی ئاسایی (دەرەوە + ناوەوە)",
+          "price": 10000,
+          "isFree": false,
+          "vehicleSize": "sedan",
+          "staffId": "staff-1",
+          "staffName": "وەستا ڕێبوار عەلی",
+          "bayNumber": 1,
+          "paymentMethod": "cash",
+          "paymentStatus": "paid",
+          "workerCommission": 2000,
+          "isSubscriptionWash": false
+        }
+      ]
+    }
+  ],
+  "expenses": [],
+  "setupItems": [],
+  "staff": [
+    {
+      "id": "staff-1",
+      "name": "وەستا ڕێبوار عەلی",
+      "role": "وەستای سەرەکی و پۆلیش",
+      "phone": "07701112233",
+      "salaryType": "monthly",
+      "baseSalary": 650000,
+      "commissionType": "fixed",
+      "commissionValue": 2000,
+      "workHours": "08:00 AM - 06:00 PM",
+      "startDate": "2026-05-10",
+      "status": "active",
+      "absentRecords": [],
+      "deductions": []
+    },
+    {
+      "id": "staff-2",
+      "name": "وەستا کاروان فەتاح",
+      "role": "وەستای کەفڕێژ و دەرەوە",
+      "phone": "07502223344",
+      "salaryType": "monthly",
+      "baseSalary": 500000,
+      "commissionType": "fixed",
+      "commissionValue": 2000,
+      "workHours": "08:00 AM - 06:00 PM",
+      "startDate": "2026-07-01",
+      "status": "active",
+      "absentRecords": [
+        {
+          "id": "abs-1794175630142",
+          "date": "2026-11-08",
+          "reason": "نەخۆش بوو"
+        },
+        {
+          "id": "abs-1794175626141",
+          "date": "2026-11-08",
+          "reason": "نەخۆش بوو"
+        },
+        {
+          "id": "abs-1794175621860",
+          "date": "2026-11-08",
+          "reason": "نەخۆش بوو"
+        },
+        {
+          "id": "abs-1",
+          "date": "2026-10-18",
+          "reason": "سەردانی پزیشکی کردبوو"
+        }
+      ],
+      "deductions": [
+        {
+          "id": "ded-1794175648045",
+          "date": "2026-11-08",
+          "amount": 5300,
+          "reason": "د"
+        },
+        {
+          "id": "ded-1",
+          "date": "2026-10-14",
+          "amount": 10000,
+          "reason": "غەرامەی بەفیڕۆدانی شامپۆ و کەف"
+        }
+      ]
+    },
+    {
+      "id": "staff-3",
+      "name": "وەستا هەڵمەت محەمەد",
+      "role": "وەستای ناوەوە و کوشن",
+      "phone": "07713334455",
+      "salaryType": "daily",
+      "baseSalary": 18000,
+      "commissionType": "fixed",
+      "commissionValue": 2000,
+      "workHours": "09:00 AM - 07:00 PM",
+      "startDate": "2026-09-15",
+      "status": "active",
+      "absentRecords": [],
+      "deductions": []
+    },
+    {
+      "id": "staff-4",
+      "name": "سەردار کەریم",
+      "role": "وەستای پێشوو (ناوەوە)",
+      "phone": "07709998877",
+      "salaryType": "monthly",
+      "baseSalary": 450000,
+      "commissionType": "fixed",
+      "commissionValue": 2000,
+      "workHours": "08:00 AM - 06:00 PM",
+      "startDate": "2026-02-01",
+      "endDate": "2026-08-30",
+      "status": "archived",
+      "absentRecords": [
+        {
+          "id": "abs-old-1",
+          "date": "2026-06-12",
+          "reason": "نەخۆش بوو"
+        }
+      ],
+      "deductions": [
+        {
+          "id": "ded-old-1",
+          "date": "2026-07-05",
+          "amount": 15000,
+          "reason": "شکاندنی دەسکی ئاوپڕژێن"
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "id": "srv-1",
+      "name": "شۆردنی ئاسایی (دەرەوە + ناوەوە)",
+      "category": "سەیارە",
+      "unit": "سەیارە",
+      "price": 10000,
+      "description": "کەفی چڕ، شۆردنی دەرەوە بە فشاری بەرز، ناوەوە بە گسک، پاککردنەوەی جام",
+      "durationMinutes": 25
+    },
+    {
+      "id": "srv-2",
+      "name": "شۆردنی تەواو VIP",
+      "category": "سەیارە",
+      "unit": "سەیارە",
+      "price": 25000,
+      "description": "کەفی نانۆ، ژێرەوە و تایەر و ویل، بزوێنەر بە هەڵم، بۆنکردن، واکس و بریقەی خێرا",
+      "durationMinutes": 45
+    },
+    {
+      "id": "srv-3",
+      "name": "شۆردنی بزوێنەر و ژێرەوە (Steam & Degreaser)",
+      "category": "سەیارە",
+      "unit": "سەیارە",
+      "price": 15000,
+      "description": "لێکردنەوەی چەوری و ڕۆن بە مەوادی تایبەت و ئاوی گەرم",
+      "durationMinutes": 30
+    },
+    {
+      "id": "srv-polish-1",
+      "name": "پۆڵیشی ٢ قۆناغی و لادانی پەڵە (Paint Correction)",
+      "category": "پۆڵیش و نانۆ سێرامیک",
+      "unit": "سەیارە",
+      "price": 45000,
+      "description": "لابردنی شوختی ورد و پەڵە، ڕێکخستنی بۆیەی سەیارە، نانۆ واکسی برسکەدارکەر",
+      "durationMinutes": 90
+    },
+    {
+      "id": "srv-polish-2",
+      "name": "نانۆ سێرامیکی ٣ ساڵە ئەڵمانی (9H Ceramic Coating)",
+      "category": "پۆڵیش و نانۆ سێرامیک",
+      "unit": "سەیارە",
+      "price": 150000,
+      "description": "پۆڵیشی کریستاڵی تەواو + ڕووپۆشی پارێزەری تیشکی خۆر و ئاو و خۆڵ بە گەرەنتی",
+      "durationMinutes": 180
+    },
+    {
+      "id": "srv-carpet-1",
+      "name": "شۆردنی فەرش بە ئامێری ئۆتۆماتیک (بۆ هەر مەتر دووجا)",
+      "category": "شۆردنی فەرش",
+      "unit": "مەتر دووجا (م²)",
+      "price": 2500,
+      "description": "خاوێنکردنەوەی قووڵ، وشککردنەوەی خێرا بە سەنتەرفیووج و پێچانەوە بە نایلۆن",
+      "durationMinutes": 120
+    },
+    {
+      "id": "srv-sofa-1",
+      "name": "شۆردنی قەنەفە بە هەڵم (تەخمی ٧ نەفەری)",
+      "category": "شۆردنی قەنەفە",
+      "unit": "تەخم",
+      "price": 40000,
+      "description": "لابردنی پەڵەی قورس بە هەڵمی گەرم و مەوادی دژە بەکتریا و بۆنخۆشکەر",
+      "durationMinutes": 60
+    },
+    {
+      "id": "srv-sofa-2",
+      "name": "شۆردنی قەنەفە یان کورسی تاک (Single Sofa / Chair)",
+      "category": "شۆردنی قەنەفە",
+      "unit": "دانە",
+      "price": 6000,
+      "description": "پاککردنەوەی قەنەفە و کورسی نانخواردن یان بەڕێوەبەر لە پەڵە و خۆڵ",
+      "durationMinutes": 20
+    }
+  ],
+  "settings": {
+    "themeMode": "dark",
+    "carWashName": "غەسلی دەریا (Darya Car Wash)",
+    "carWashSlogan": "پاکوخاوێنی و درەوشانەوەی ئۆتۆمبێلەکەت متمانەی ئێمەیە",
+    "carWashPhone": "0770 123 4567",
+    "carWashAddress": "کوردستان",
+    "businessHours": "08:00 AM - 10:00 PM",
+    "systemUrl": "",
+    "receiptPrinterSize": "80mm",
+    "receiptFooterNote": "سوپاس بۆ سەردانەکەت بۆ غەسلی دەریا! مۆڵەت ٢٤ کاتژمێرە لە کاتی بارانباریندا.",
+    "autoPrintReceipt": true,
+    "showStaffOnReceipt": true,
+    "numberOfBays": 3,
+    "dailyTargetCars": 35,
+    "staffPin": "1234",
+    "adminPin": "9999",
+    "expiryDaysLimit": 15,
+    "washesNeededForFree": 4,
+    "milestoneWashTarget": 100,
+    "vipDiscountPercent": 10,
+    "enableWhatsAppNotification": true,
+    "monthlyRent": 600000,
+    "dailyUtilities": 12000,
+    "averageMaterialCostPerWash": 1500,
+    "googleMapsReviewUrl": "https://maps.app.goo.gl/",
+    "ownerPhone": "0770 123 4567",
+    "enableReviewBooster": true,
+    "vipMonthlyPlanPrice": 50000,
+    "vipQuarterlyPlanPrice": 130000,
+    "telegramBotEnabled": false,
+    "telegramBotToken": "",
+    "telegramChatId": "",
+    "garageCapacity": 30,
+    "garageDailyRate": 1000,
+    "garageOvernightRate": 3000,
+    "garageMonthlyRate": 25000
+  },
+  "inventory": [
+    {
+      "id": "inv-1",
+      "name": "شامپۆی کەفی چڕ (Active Snow Foam)",
+      "category": "شامپۆ و کەف",
+      "quantity": 42.5,
+      "unit": "لیتر",
+      "minAlertLevel": 10,
+      "costPerUnit": 4000,
+      "lastRestocked": "2026-10-15",
+      "notes": "مارکەی ئیتالی بۆ پەمپی کەف"
+    },
+    {
+      "id": "inv-2",
+      "name": "واکسی درەوشێنەر و پارێزەر (Liquid Carnauba)",
+      "category": "واکس و پۆڵیش",
+      "quantity": 20,
+      "unit": "لیتر",
+      "minAlertLevel": 5,
+      "costPerUnit": 12000,
+      "lastRestocked": "2026-10-10",
+      "notes": "بۆ قۆناغی کۆتایی شۆردنی VIP"
+    },
+    {
+      "id": "inv-3",
+      "name": "مەوادی پۆڵیشی زبر و ورد (3M Fast Cut)",
+      "category": "واکس و پۆڵیش",
+      "quantity": 6,
+      "unit": "دانە",
+      "minAlertLevel": 2,
+      "costPerUnit": 35000,
+      "lastRestocked": "2026-10-05",
+      "notes": "بۆ پاککردنەوەی شوختی بۆیە"
+    },
+    {
+      "id": "inv-4",
+      "name": "شامپۆی شۆردنی کوشن و فەرش (Upholstery Detergent)",
+      "category": "شامپۆ و کەف",
+      "quantity": 22.5,
+      "unit": "لیتر",
+      "minAlertLevel": 8,
+      "costPerUnit": 5000,
+      "lastRestocked": "2026-10-12",
+      "notes": "کەفی کەم، پاککردنەوەی خێرای پەڵە"
+    },
+    {
+      "id": "inv-5",
+      "name": "ڕۆنی هایدرۆلیکی پەمپی فشاری بەرز",
+      "category": "ڕۆن و هایدرۆلیک",
+      "quantity": 8.1,
+      "unit": "لیتر",
+      "minAlertLevel": 5,
+      "costPerUnit": 15000,
+      "lastRestocked": "2026-11-08",
+      "notes": "⚠️ کەم ماوە - پێویستی بە کڕین هەیە بۆ پەمپەکان"
+    }
+  ],
+  "roadmap": [
+    {
+      "id": "road-1",
+      "title": "ناسینەوەی تابلۆ بە کامێرای ژیریی دەستکرد (AI ANPR)",
+      "description": "لکاندنی کامێرای دەروازە بە مۆدێلی کۆمپیوتەر ڤیژن بۆ خوێندنەوەی تابلۆی هەموو شارەکان لە چرکەی هاتنەژوورەوەدا بەبێ دەستکاری.",
+      "targetVersion": "v2.0.0",
+      "completed": false,
+      "notes": "کامێرای کوالیتی بەرز لەگەڵ ڕووناکی شەوانە پێویستە.",
+      "createdAt": "2026-10-21"
+    },
+    {
+      "id": "road-2",
+      "title": "پەخشی ڕاستەوخۆی کامێرا بۆ مۆبایلی کڕیار (Live Streaming)",
+      "description": "بەستنەوەی کامێرای هێڵی شۆردن بە بەستەری ستیکەری NFC تا کڕیار لە ژووری دانیشتن سەیری شۆردنی سەیارەکەی بکات.",
+      "targetVersion": "v2.1.0",
+      "completed": false,
+      "notes": "پێویستی بە سێرڤەری پەخشی خێرای WebRTC هەیە.",
+      "createdAt": "2026-10-21"
+    },
+    {
+      "id": "road-3",
+      "title": "سیستەمی نامەی ئۆتۆماتیکی WhatsApp و SMS",
+      "description": "پەیامی ئاگادارکردنەوەی تەواوبوونی سەیارە، پەیامی پاداشت لە شۆردنی ٤ەم، و پەیامی بیرخستنەوە پێش تەواوبوونی ١٥ ڕۆژەکە.",
+      "targetVersion": "v2.0.0",
+      "completed": false,
+      "notes": "بەستنەوە بە دەروازەی Twilio یان WhatsApp Business API.",
+      "createdAt": "2026-10-21"
+    },
+    {
+      "id": "road-4",
+      "title": "سکانەری بێتەلی بارکۆد و QR (Wireless Scanner)",
+      "description": "ئامێری سکانەری دەستی بۆ کاشێر بۆ ئەوەی بە یەک چرکە کڕیار یان کارتی سوویچ بخوێنێتەوە بەبێ دەستنووسین.",
+      "targetVersion": "v1.5.0",
+      "completed": false,
+      "notes": "ئامێری سکانەری بلووتوس کە دەبەسترێت بە لاپتۆپی کاشێر.",
+      "createdAt": "2026-10-21"
+    },
+    {
+      "id": "road-5",
+      "title": "بەشی شۆردنی فەرش بە مەتر دووجا و خزمەتگوزاری گەیاندن (Carpet Laundry)",
+      "description": "تۆمارکردنی فەرش بە پێوانەی مەتر دووجا (م²)، پێدانی بارکۆدی پارێزراو بۆ هەر فەرشێک بۆ ئەوەی تێکەڵ نەبن، و سیستەمی هێنان و بردنەوە لە ماڵان.",
+      "targetVersion": "v2.2.0",
+      "completed": false,
+      "notes": "ئامێری سەنتەرفیووجی وشککەرەوە و ماتۆڕی شۆردن لەگەڵ نایلۆنی پاکەتکردن.",
+      "createdAt": "2026-10-21"
+    },
+    {
+      "id": "road-6",
+      "title": "تیمی شۆردنی قەنەفە و مۆبیلیاتی ماڵان (Sofa & Upholstery Cleaning)",
+      "description": "ناردنی تیمی گەڕۆک بە ئامێری مژەری هەڵمی ئاوی گەرم بۆ شۆردنی قەنەفەی ماڵان، دۆشەک، و کورسی ئۆفیسەکان.",
+      "targetVersion": "v2.2.0",
+      "completed": false,
+      "notes": "ئامێری ڤاکیومی هەڵمی گەڕۆک بە مەوادی دژە پەڵەی پڕۆفیشناڵ.",
+      "createdAt": "2026-10-21"
+    },
+    {
+      "id": "road-7",
+      "title": "ستۆدیۆی تایبەتی پۆڵیش و نانۆ سێرامیک (VIP Detailing Studio)",
+      "description": "تەرخانکردنی ژوورێکی داخراوی بێ تۆز بە ڕووناکی هێکسایی (Hexagon Lights) بۆ پۆڵیشی کریستاڵ، نانۆ سێرامیکی چەند ساڵە، و چاککردنی بۆیە.",
+      "targetVersion": "v2.0.0",
+      "completed": false,
+      "notes": "ئامێری ڕووناکی کوالێتی بەرز و پێوانەکردنی ئەستووری بۆیە (Paint Thickness Gauge).",
+      "createdAt": "2026-10-21"
+    }
+  ],
+  "cafeItems": [
+    {
+      "id": "c-1",
+      "name": "چای گەرمی خەست",
+      "price": 1000,
+      "category": "خواردنەوەی گەرم"
+    },
+    {
+      "id": "c-2",
+      "name": "قاوەی ئیسپرێسۆ",
+      "price": 2000,
+      "category": "خواردنەوەی گەرم"
+    },
+    {
+      "id": "c-3",
+      "name": "ئاوی کانزایی سارد",
+      "price": 500,
+      "category": "خواردنەوەی سارد"
+    },
+    {
+      "id": "c-4",
+      "name": "ڕێدبوول / مۆنستەر",
+      "price": 2500,
+      "category": "خواردنەوەی سارد"
+    },
+    {
+      "id": "c-5",
+      "name": "چپس و کێک و بسکیت",
+      "price": 1000,
+      "category": "شیرینی و سووکەژەم"
+    }
+  ],
+  "zreports": [],
+  "parkingRecords": [
+    {
+      "id": "park-1794332013656",
+      "ticketNumber": "G-106",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "21",
+        "provinceName": "سلێمانی",
+        "letter": "A",
+        "number": "7498"
+      },
+      "slotNumber": 6,
+      "entryTime": "2026-11-10T17:33:33.656Z",
+      "status": "parked",
+      "rateType": "daily",
+      "fee": 1000,
+      "paymentStatus": "paid",
+      "paymentMethod": "cash",
+      "carModel": "سەیارەی گەراج"
+    },
+    {
+      "id": "park-1",
+      "ticketNumber": "G-101",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "21",
+        "provinceName": "سلێمانی",
+        "letter": "A",
+        "number": "3421"
+      },
+      "slotNumber": 1,
+      "entryTime": "2026-11-10T11:42:06.023Z",
+      "status": "parked",
+      "rateType": "daily",
+      "fee": 1000,
+      "paymentStatus": "paid",
+      "paymentMethod": "cash",
+      "carModel": "Toyota Land Cruiser 2023",
+      "ownerName": "کاک بێستون"
+    },
+    {
+      "id": "park-2",
+      "ticketNumber": "G-102",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "22",
+        "provinceName": "هەولێر",
+        "letter": "B",
+        "number": "5612"
+      },
+      "slotNumber": 2,
+      "entryTime": "2026-11-10T12:27:06.023Z",
+      "status": "parked",
+      "rateType": "daily",
+      "fee": 1000,
+      "paymentStatus": "paid",
+      "paymentMethod": "fib",
+      "carModel": "Kia Sportage 2022",
+      "ownerName": "دکتۆر هێمن"
+    },
+    {
+      "id": "park-3",
+      "ticketNumber": "G-103",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "24",
+        "provinceName": "دهۆک",
+        "letter": "M",
+        "number": "9081"
+      },
+      "slotNumber": 3,
+      "entryTime": "2026-11-10T13:02:06.023Z",
+      "status": "exited",
+      "rateType": "daily",
+      "fee": 1000,
+      "paymentStatus": "paid",
+      "paymentMethod": "cash",
+      "carModel": "Hyundai Tucson 2021",
+      "exitTime": "2026-11-10T17:33:52.788Z"
+    },
+    {
+      "id": "park-4",
+      "ticketNumber": "G-104",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "21",
+        "provinceName": "سلێمانی",
+        "letter": "H",
+        "number": "1120"
+      },
+      "slotNumber": 4,
+      "entryTime": "2026-11-10T13:27:06.023Z",
+      "status": "parked",
+      "rateType": "daily",
+      "fee": 1000,
+      "paymentStatus": "paid",
+      "paymentMethod": "cash",
+      "carModel": "Nissan Patrol 2020"
+    },
+    {
+      "id": "park-5",
+      "ticketNumber": "G-105",
+      "plate": {
+        "type": "old",
+        "oldCityName": "سلێمانی",
+        "oldCategory": "تایبەت",
+        "number": "45981"
+      },
+      "slotNumber": 5,
+      "entryTime": "2026-11-10T13:32:06.023Z",
+      "status": "parked",
+      "rateType": "daily",
+      "fee": 1000,
+      "paymentStatus": "unpaid",
+      "carModel": "Chevrolet Malibu 2018"
+    }
+  ],
+  "lastUpdated": "2026-11-10T17:43:03.752Z",
+  "version": "2026-11-09-v1"
+}
