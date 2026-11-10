@@ -8,7 +8,7 @@ const SYNC_SECRET = 'carwash-local-sync-v1';
 
 export async function GET(request: Request) {
   try {
-    const data = readServerDatabase();
+    const data = await readServerDatabase();
     const authHeader = request.headers.get('x-carwash-sync-key');
     const isAuthorized = authHeader === SYNC_SECRET;
 
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const updated = writeServerDatabase(body);
+    const updated = await writeServerDatabase(body);
     return NextResponse.json({
       success: true,
       data: updated,

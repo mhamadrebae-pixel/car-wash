@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const db = readServerDatabase();
+    const db = await readServerDatabase();
     const searchId = id.toLowerCase().trim();
 
     const vehicle = db.vehicles.find(
@@ -55,7 +55,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body: any = await request.json();
-    const db = readServerDatabase();
+    const db = await readServerDatabase();
     const searchId = id.toLowerCase().trim();
 
     const vehicle = db.vehicles.find(
@@ -109,7 +109,7 @@ export async function POST(
       );
     }
 
-    writeServerDatabase({ vehicles: updatedVehicles });
+    await writeServerDatabase({ vehicles: updatedVehicles });
 
     return NextResponse.json({
       success: true,
