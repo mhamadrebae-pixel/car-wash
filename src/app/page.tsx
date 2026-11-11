@@ -435,7 +435,9 @@ export default function MainPage() {
           {activeTab === 'inventory' && (
             <InventoryModule
               inventory={inventory}
+              settings={settings}
               onUpdateInventory={handleUpdateInventory}
+              onAddExpense={(newExp) => handleUpdateExpenses([newExp, ...expenses])}
               onNotify={showNotification}
             />
           )}
@@ -452,6 +454,7 @@ export default function MainPage() {
               onDataImported={reloadAllData}
               currentTheme={themeMode}
               onToggleTheme={handleToggleTheme}
+              onNavigateTab={(tab) => setActiveTab(tab as TabKey)}
             />
           )}
         </main>

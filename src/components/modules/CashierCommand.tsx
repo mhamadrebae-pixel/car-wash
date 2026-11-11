@@ -574,9 +574,9 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
       services[0];
     const nowISO = new Date().toISOString();
 
-    // Automatically assign to the first available empty bay (or 0 = Queue if all bays occupied)
-    const autoBay = bays.find((b) => !vehicles.some((v) => v.currentBay === b)) || 0;
-    const resolvedBay = targetBay > 0 ? targetBay : autoBay;
+    // In Fixed Bay mode: auto-assign first empty bay, or Queue if all occupied
+    const isTargetOccupied = targetBay > 0 && vehicles.some((v) => v.currentBay === targetBay);
+    const resolvedBay = (targetBay > 0 && !isTargetOccupied) ? targetBay : firstAvailableBay;
 
     const isVip = Boolean(
       matchedExistingVehicle?.subscription?.status === 'active' &&
@@ -717,14 +717,14 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
       });
       onNotify(
         resolvedBay > 0
-          ? `🎉 سەیارەکە خرایە هۆڵی ${resolvedBay} و پسوولەکەی بڕدرا!`
+          ? `🎉 سەیارەی ${carModel || 'سەیارە'} تۆمارکرا، خرایە ناو غەسل و پسوولەکەی بڕدرا! 🖨️`
           : '🎉 سەیارەکە خرایە نۆبە و پسوولەکەی بڕدرا!'
       );
     } else {
       if (soundEnabled) playPosSound('beep');
       onNotify(
         resolvedBay > 0
-          ? `سەیارەی نوێ تۆمارکرا و خرایە ناو هۆڵی ${resolvedBay}.`
+          ? `سەیارەی نوێ (${carModel || 'سەیارە'}) تۆمارکرا و خرایە ناو غەسل.`
           : 'سەیارەی نوێ تۆمارکرا و خرایە نۆبەوە.'
       );
     }
@@ -761,14 +761,11 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     const finalPrice = calculateServicePrice(srv, 'sedan');
     const workerCommission = calculateWorkerCommission(worker, finalPrice);
 
-    // Find next available bay if target is occupied or 0
-    let chosenBay = expressTargetBay;
-    if (chosenBay > 0) {
-      const isOccupied = vehicles.some((v) => v.currentBay === chosenBay);
-      if (isOccupied) {
-        const emptyBay = bays.find((b) => !vehicles.some((v) => v.currentBay === b));
-        chosenBay = emptyBay || 0;
-      }
+    // In Open Yard mode: automatically assign next slot number
+    const usedBays = new Set(vehicles.map((v) => v.currentBay).filter(Boolean));
+    let chosenBay = 1;
+    while (usedBays.has(chosenBay)) {
+      chosenBay++;
     }
 
     // Match existing or create
@@ -903,14 +900,14 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
       });
       onNotify(
         chosenBay > 0
-          ? `⚡ سەیارەی ${expressLetter}-${cleanNum} خرایە ناو هۆڵی ${chosenBay} و پسوولەکەی بڕدرا!`
+          ? `⚡ سەیارەی ${expressLetter}-${cleanNum} خرایە ناو غەسل و پسوولەکەی بڕدرا! 🖨️`
           : `⚡ سەیارەی ${expressLetter}-${cleanNum} خرایە نۆبە و پسوولەکەی بڕدرا!`
       );
     } else {
       if (soundEnabled) playPosSound('beep');
       onNotify(
         chosenBay > 0
-          ? `⚡ سەیارەی ${expressLetter}-${cleanNum} خرایە ناو هۆڵی ${chosenBay}!`
+          ? `⚡ سەیارەی ${expressLetter}-${cleanNum} خرایە ناو غەسل. (پارەدان لە دەرچوون)`
           : `سەیارەی ${expressLetter}-${cleanNum} خرایە نۆبە.`
       );
     }
@@ -1095,9 +1092,13 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     onNotify('🎉 ٩ شۆردنی ئەمڕۆ (٢١٨,٠٠٠ دینار) و هۆڵە چالاکەکان بارکران!');
   };
 
-  // Queue & Bay Stats (Queue only includes vehicles explicitly waiting for wash)
+  // Active Yard Vehicles & Stats (All vehicles currently inside car wash)
+  const activeYardCars = vehicles.filter(
+    (v) => v.currentBay !== undefined || (v.washStage !== undefined && (v.washStage as string) !== 'دەرچوو')
+  );
+  const readyCarsCount = activeYardCars.filter((v) => v.washStage === 'تەواوبوو').length;
+  const activeCarsInBaysCount = activeYardCars.length;
   const queueVehicles = vehicles.filter((v) => !v.currentBay && v.washStage === 'چاوەڕوانی');
-  const activeCarsInBaysCount = vehicles.filter((v) => v.currentBay).length;
 
   // Selected Service object
   const currentSelectedService =
@@ -1163,21 +1164,23 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
             <span>{isSyncing ? 'نوێکردنەوە...' : 'تازەکردنەوەی داتا'}</span>
           </button>
 
-          {/* Bay & Queue Unified Status Pill */}
+          {/* Yard Live Status Pill */}
           <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-xs flex items-center gap-2 text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>هۆڵەکان:</span>
+              <span>لە غەسلدا:</span>
               <strong className="text-slate-900 dark:text-white font-mono font-bold">
-                {activeCarsInBaysCount}/{bays.length}
+                {activeYardCars.length} سەیارە
               </strong>
             </div>
-            <span className="text-slate-300 dark:text-slate-600">•</span>
-            <div className="flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-amber-500" />
-              <span>نۆبە:</span>
-              <strong className="text-slate-900 dark:text-white font-mono font-bold">{queueVehicles.length}</strong>
-            </div>
+            {readyCarsCount > 0 && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                  {readyCarsCount} تەواوبووە ✨
+                </span>
+              </>
+            )}
           </div>
 
           {/* Unpaid / Debt Cars Button */}
@@ -1313,17 +1316,17 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           </div>
         </div>
 
-        {/* 3. Active in Bays Card */}
+        {/* 3. Active in Wash Yard Card */}
         <div className="bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100/50 dark:from-amber-950/70 dark:via-slate-900 dark:to-orange-950/50 border-2 border-amber-300 dark:border-amber-500/70 rounded-2xl p-4 flex items-center justify-between shadow-xs transition hover:shadow-md">
           <div className="space-y-1">
             <span className="text-xs text-amber-900 dark:text-amber-300 font-extrabold block">
-              لە ناو هۆڵەکاندا (Active)
+              سەیارە لە ناو غەسلدا
             </span>
             <strong className="text-xl sm:text-2xl font-black text-amber-950 dark:text-amber-100 font-mono tracking-tight block">
-              {activeCarsInBaysCount} <span className="text-xs font-sans font-bold text-amber-800 dark:text-amber-300">لە {bays.length} هۆڵ</span>
+              {activeYardCars.length} <span className="text-xs font-sans font-bold text-amber-800 dark:text-amber-300">سەیارە</span>
             </strong>
             <span className="text-[10px] bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full font-bold inline-block">
-              {queueVehicles.length} سەیارە لە نۆبەدان
+              {readyCarsCount > 0 ? `${readyCarsCount} سەیارە تەواوبووە ✨` : 'شۆردنی ڕاستەوخۆ 🚿'}
             </span>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-amber-600 text-white dark:bg-amber-500 shadow-md shadow-amber-600/30 flex items-center justify-center shrink-0">
@@ -1388,7 +1391,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           }`}
         >
           <Car className="w-3.5 h-3.5" />
-          <span>هۆڵەکان ({activeCarsInBaysCount}/{bays.length})</span>
+          <span>لە غەسلدا ({activeYardCars.length})</span>
         </button>
         <button
           type="button"
@@ -1415,35 +1418,11 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           <div className="border-b border-slate-100 dark:border-slate-800 pb-2.5 flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <Plus className="w-4 h-4 text-blue-600" />
-              تۆماری سەیارە و ناردن
+              تۆماری خێرای سەیارە
             </h3>
-
-            {/* Express Mode Toggle */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => setIsExpressMode(false)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
-                  !isExpressMode
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                ئاسایی
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsExpressMode(true)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                  isExpressMode
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                <Zap className="w-3 h-3" />
-                ⚡ دەستبەجێ
-              </button>
-            </div>
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl">
+              شۆردنی ئاسایی (دەرەوە + ناوەوە)
+            </span>
           </div>
 
           {/* ⚡ EXPRESS MODE INTERFACE */}
@@ -1566,38 +1545,6 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
                       <span className="text-[10px] font-mono mt-0.5 opacity-90">
                         {formatIQD(srv.price)}
                       </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Target Bay */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">ناردن بۆ هۆڵ:</label>
-                <div className="grid grid-cols-4 gap-1 text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setExpressTargetBay(0)}
-                    className={`py-1.5 rounded-xl border ${
-                      expressTargetBay === 0
-                        ? 'bg-amber-500 text-white border-amber-600'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    نۆبە ⏳
-                  </button>
-                  {bays.map((b) => (
-                    <button
-                      key={b}
-                      type="button"
-                      onClick={() => setExpressTargetBay(b)}
-                      className={`py-1.5 rounded-xl border ${
-                        expressTargetBay === b
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      هۆڵی {b}
                     </button>
                   ))}
                 </div>
@@ -1947,11 +1894,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
                   className="w-full h-12 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-black shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Printer className="w-5 h-5" />
-                  <span>
-                    {effectiveTargetBay > 0
-                      ? `تۆمارکردن و بڕینی پسوولە (خستنە هۆڵی ${effectiveTargetBay}) 🖨️`
-                      : 'تۆمارکردن و بڕینی پسوولە (خستنە نۆبە) 🖨️'}
-                  </span>
+                  <span>تۆمارکردن و بڕینی پسوولە (دەستپێکردنی شۆردن) 🖨️</span>
                 </button>
 
                 {/* 2. Secondary: Register without printing yet (Post-pay at exit) */}
@@ -1961,11 +1904,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
                   className="w-full h-9 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  <span>
-                    {effectiveTargetBay > 0
-                      ? `تەنها خستنە ناو هۆڵی ${effectiveTargetBay} (پارەدان لە دەرچوون)`
-                      : 'تەنها خستنە ناو نۆبەی چاوەڕوانی'}
-                  </span>
+                  <span>تەنها وەرگرتنی سەیارە (پارەدان لە کاتی دەرچوون) 🚗</span>
                 </button>
               </div>
             </form>

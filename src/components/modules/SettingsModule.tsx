@@ -64,6 +64,8 @@ import {
   Moon,
   Palette,
   Laptop,
+  DollarSign,
+  Zap,
 } from 'lucide-react';
 
 interface SettingsModuleProps {
@@ -75,6 +77,7 @@ interface SettingsModuleProps {
   onDataImported?: () => void;
   currentTheme?: 'light' | 'dark';
   onToggleTheme?: (theme?: 'light' | 'dark') => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const SettingsModule: React.FC<SettingsModuleProps> = ({
@@ -86,6 +89,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
   onDataImported,
   currentTheme = 'light',
   onToggleTheme,
+  onNavigateTab,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -786,7 +790,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* 4. RENT & OVERHEAD COSTS (کرێی شوێن و خەرجییە نەگۆڕەکان)       */}
+      {/* 4. RENT & OVERHEAD COSTS (تەخمینی بنەڕەتی کرێ و خەرجییەکان)     */}
       {/* ============================================================== */}
       {activeTab === 'rent_costs' && (
         <div className="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/60 rounded-3xl p-6 space-y-6 shadow-xs text-xs relative overflow-hidden text-slate-900 dark:text-white">
@@ -796,9 +800,11 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">کرێی شوێن و خەرجییە نەگۆڕەکان (Rent & Overhead Costs)</h3>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  تەخمینی بنەڕەتی کرێ و وزە (Baseline Rent & Overhead Estimates)
+                </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  کرێی شوێن و وزە لە داهات لێکدەدرێتەوە تا خاڵی قازانج و زیان بە وردی دیار بێت.
+                  پێوەر و تەخمینی سەرەتایی بۆ دۆزینەوەی خاڵی هاوسەنگی و سەرکەوتن (Break-Even)ی ڕۆژانە.
                 </p>
               </div>
             </div>
@@ -809,12 +815,37 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             </div>
           </div>
 
+          {/* Guidance Banner for Dynamic Monthly Fluctuations */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800/80 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-blue-950 dark:text-blue-200 font-bold">
+                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span className="text-sm font-black">ئەم نرخە بنەڕەتییانە چیین و خەرجی مانگانە لە کوێ تۆمار دەکرێت؟</span>
+              </div>
+              <p className="text-[11px] text-blue-800 dark:text-blue-300/90 leading-relaxed max-w-2xl">
+                ئەم نرخ و ژمارانەی لێرەن تەنها <strong>«مەزەندە و بنەمای سەرەتاییە (Baseline)»</strong> بۆ ئەوەی غەسلەکە بزانێت پێویستە ڕۆژانە چەند سەیارە بشوات تا زەرەر نەکات پێش دەرچوونی پسوڵەکان.
+                <br />
+                بەڵام <strong>خەرجییە گۆڕاوە ڕاستەقینەکانی هەموو مانگێک</strong> (وەک: بەرزبوونەوە یان گۆڕانی کرێ، پسوڵەی کارەبای نیشتمانی، پارەی مۆلیدەی ئەهلی، کڕینی تانکەری ئاو) مانگانە لە بەشی <strong>«خەرجییەکان (Expenses)»</strong> تۆمار دەکرێن و داشبۆرد بەپێی مانگی خۆی لێکیان دەداتەوە.
+              </p>
+            </div>
+            {onNavigateTab && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab('expenses')}
+                className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shrink-0 transition flex items-center gap-2 shadow-sm shadow-blue-500/20 cursor-pointer text-xs"
+              >
+                <DollarSign className="w-4 h-4" />
+                چوون بۆ بەشی خەرجییەکان
+              </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Monthly Rent */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-2">
               <label className="text-slate-700 dark:text-slate-300 block font-bold text-xs flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                کرێی مانگانەی شوێن (IQD):
+                کرێی مانگانەی شوێن - بنەڕەتی (IQD):
               </label>
               <input
                 type="number"
@@ -833,7 +864,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-2">
               <label className="text-slate-700 dark:text-slate-300 block font-bold text-xs flex items-center gap-1.5">
                 <Droplets className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                تێچووی ڕۆژانەی ئاو و کارەبا و مۆلیدە:
+                تێچووی ڕۆژانەی ئاو و کارەبا و مۆلیدە (مەزەندە):
               </label>
               <input
                 type="number"

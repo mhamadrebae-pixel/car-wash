@@ -241,7 +241,7 @@ export interface InventoryItem {
   name: string;
   category: 'شامپۆ و کەف' | 'واکس و پۆڵیش' | 'نانۆ و پارێزەر' | 'ڕۆن و هایدرۆلیک' | 'پێداویستی تر';
   quantity: number;
-  unit: 'لیتر' | 'دانە' | 'کیلۆ' | 'کارتۆن';
+  unit: 'لیتر' | 'دانە' | 'بتڵ' | 'گالۆن' | 'کیلۆ' | 'کارتۆن';
   minAlertLevel: number;
   costPerUnit: number; // IQD
   lastRestocked?: string;
