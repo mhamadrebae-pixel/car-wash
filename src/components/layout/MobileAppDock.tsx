@@ -29,6 +29,7 @@ interface MobileAppDockProps {
   activeTab: TabKey;
   onTabChange: (tab: TabKey) => void;
   activeCarsInBay: number;
+  parkedCarsCount?: number;
   freeReadyCount: number;
   setupCount?: number;
   lowInventoryCount?: number;
@@ -42,6 +43,7 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
   activeTab,
   onTabChange,
   activeCarsInBay,
+  parkedCarsCount = 0,
   freeReadyCount,
   setupCount = 0,
   lowInventoryCount = 0,
@@ -67,16 +69,18 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
       badgeColor: 'bg-blue-600 text-white animate-pulse',
     },
     {
+      id: 'garage',
+      label: 'گەراج',
+      icon: Warehouse,
+      badge: parkedCarsCount > 0 ? parkedCarsCount : undefined,
+      badgeColor: 'bg-amber-600 text-white font-bold',
+    },
+    {
       id: 'vehicles',
       label: 'سەیارەکان',
       icon: Car,
       badge: freeReadyCount > 0 ? `${freeReadyCount} Free` : undefined,
       badgeColor: 'bg-emerald-600 text-white',
-    },
-    {
-      id: 'analytics',
-      label: 'داشبۆرد',
-      icon: LayoutDashboard,
     },
     {
       id: 'expenses',
@@ -85,10 +89,10 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
     },
   ];
 
-  // If cashier, limit primary tabs if needed
+  // Visible primary tabs (Both Admin and Cashier have direct access to Halls, Garage, Vehicles, Expenses)
   const visibleTabs =
     userRole === 'cashier'
-      ? primaryTabs.filter((t) => ['cashier', 'vehicles'].includes(t.id))
+      ? primaryTabs.filter((t) => ['cashier', 'garage', 'vehicles', 'expenses'].includes(t.id))
       : primaryTabs;
 
   const handleSelectTab = (tab: TabKey) => {
@@ -96,7 +100,7 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
     setIsMoreSheetOpen(false);
   };
 
-  const isMoreActive = ['staff', 'setup', 'docs', 'settings', 'garage', 'inventory'].includes(activeTab);
+  const isMoreActive = ['staff', 'setup', 'docs', 'settings', 'analytics', 'inventory'].includes(activeTab);
 
   return (
     <>
@@ -228,22 +232,22 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
 
             {/* Secondary Modules Grid */}
             <div className="grid grid-cols-2 gap-2.5 pt-1">
-              {/* Garage & Parking */}
+              {/* Analytics Dashboard */}
               <button
                 type="button"
-                onClick={() => handleSelectTab('garage')}
+                onClick={() => handleSelectTab('analytics')}
                 className={`p-3.5 rounded-2xl border text-right transition flex flex-col justify-between cursor-pointer ${
-                  activeTab === 'garage'
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700 dark:text-amber-300'
+                  activeTab === 'analytics'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 text-blue-700 dark:text-blue-300'
                     : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100'
                 }`}
               >
-                <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center shadow-xs">
-                  <Warehouse className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center shadow-xs">
+                  <LayoutDashboard className="w-4 h-4" />
                 </div>
                 <div className="mt-2.5">
-                  <span className="text-xs font-black block">گەراج و پارکیک</span>
-                  <span className="text-[10px] text-slate-400">٣٠ شوێن • ١,٠٠٠ دینار</span>
+                  <span className="text-xs font-black block">داشبۆرد و ئامار</span>
+                  <span className="text-[10px] text-slate-400">داهات، قازانج و ڕاپۆرت</span>
                 </div>
               </button>
 

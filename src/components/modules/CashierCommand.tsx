@@ -639,7 +639,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
             : matchedExistingVehicle.freeWashesClaimed,
         currentBay: resolvedBay > 0 ? resolvedBay : undefined,
         bayEntryTime: resolvedBay > 0 ? nowISO : undefined,
-        washStage: resolvedBay > 0 ? ('کەفڕێژکردن' as const) : undefined,
+        washStage: resolvedBay > 0 ? ('کەفڕێژکردن' as const) : ('چاوەڕوانی' as const),
         assignedWorkerId: resolvedBay > 0 ? worker?.id : undefined,
         assignedWorkerName: resolvedBay > 0 ? worker?.name : undefined,
         washHistory: newHistory,
@@ -689,7 +689,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
         status: 'active',
         currentBay: resolvedBay > 0 ? resolvedBay : undefined,
         bayEntryTime: resolvedBay > 0 ? nowISO : undefined,
-        washStage: resolvedBay > 0 ? 'کەفڕێژکردن' : undefined,
+        washStage: resolvedBay > 0 ? ('کەفڕێژکردن' as const) : ('چاوەڕوانی' as const),
         assignedWorkerId: resolvedBay > 0 ? worker?.id : undefined,
         assignedWorkerName: resolvedBay > 0 ? worker?.name : undefined,
         washHistory: newWashHistory,
@@ -996,7 +996,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           ...v,
           currentBay: undefined,
           bayEntryTime: undefined,
-          washStage: undefined,
+          washStage: 'چاوەڕوانی' as const,
         };
       }
       return v;
@@ -1006,12 +1006,22 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     onNotify(`سەیارەی «${vehicle.carModel}» لە هۆڵی ${bayNum} گوازرایەوە بۆ ڕیزی نۆبە.`);
   };
 
-  // Remove vehicle from Waiting Queue
+  // Remove vehicle from Waiting Queue (Safely removes from queue without deleting vehicle history!)
   const handleRemoveFromQueue = (vehicleId: string) => {
     const target = vehicles.find((v) => v.id === vehicleId);
     if (!target) return;
     if (window.confirm(`ئایا دڵنیایت لە لابردنی سەیارەی «${target.carModel} (${target.ownerName})» لە ڕیزی چاوەڕوانی (نۆبە)؟`)) {
-      const updated = vehicles.filter((v) => v.id !== vehicleId);
+      const updated = vehicles.map((v) => {
+        if (v.id === vehicleId) {
+          return {
+            ...v,
+            currentBay: undefined,
+            bayEntryTime: undefined,
+            washStage: undefined,
+          };
+        }
+        return v;
+      });
       onUpdateVehicles(updated);
       if (soundEnabled) playPosSound('beep');
       onNotify('سەیارەکە لە ڕیزی نۆبە لادرا.');
@@ -1085,8 +1095,8 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     onNotify('🎉 ٩ شۆردنی ئەمڕۆ (٢١٨,٠٠٠ دینار) و هۆڵە چالاکەکان بارکران!');
   };
 
-  // Queue & Bay Stats
-  const queueVehicles = vehicles.filter((v) => !v.currentBay);
+  // Queue & Bay Stats (Queue only includes vehicles explicitly waiting for wash)
+  const queueVehicles = vehicles.filter((v) => !v.currentBay && v.washStage === 'چاوەڕوانی');
   const activeCarsInBaysCount = vehicles.filter((v) => v.currentBay).length;
 
   // Selected Service object

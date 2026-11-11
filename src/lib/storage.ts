@@ -751,9 +751,17 @@ export function seedTodaySalesData(currentVehicles?: Vehicle[]): Vehicle[] {
         washHistory: mergedHistory,
       };
     }
+    if (v.id === 'v-1') {
+      return {
+        ...v,
+        currentBay: undefined,
+        bayEntryTime: undefined,
+        washStage: 'چاوەڕوانی' as any,
+        washHistory: mergedHistory,
+      };
+    }
     return {
       ...v,
-      currentBay: v.id === 'v-1' ? undefined : v.currentBay,
       washHistory: mergedHistory,
     };
   });

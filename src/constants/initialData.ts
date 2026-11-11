@@ -671,6 +671,7 @@ export const defaultVehicles: Vehicle[] = [
     lastVisitDate: getDaysAgoISO(0, 9, 30),
     registeredDate: getDaysAgoISO(60),
     status: 'active',
+    washStage: 'چاوەڕوانی',
     washHistory: [
       {
         id: 'w-4-1',

@@ -325,6 +325,7 @@ export default function MainPage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           activeCarsInBay={activeCarsInBay}
+          parkedCarsCount={parkedCarsCount}
           freeReadyCount={freeReadyCount}
           setupCount={setupItems.length}
           lowInventoryCount={lowInventoryCount}
