@@ -375,28 +375,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Active Branch Selector in Sidebar */}
-        {!isCollapsed && branches && branches.length > 0 && (
-          <div className="px-3 py-2 bg-indigo-50/70 dark:bg-indigo-950/40 border-b border-indigo-100/60 dark:border-indigo-900/40 flex items-center justify-between gap-1 text-[11px]">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="font-bold text-indigo-950 dark:text-indigo-200 truncate text-[11px]">
+        {!isCollapsed && branches && branches.length > 0 && onSwitchBranch && (
+          <div className="px-3 py-2 bg-gradient-to-r from-indigo-50/90 to-purple-50/90 dark:from-indigo-950/40 dark:to-purple-950/40 border-b border-indigo-100/80 dark:border-indigo-900/40 space-y-1.5 text-[11px]">
+            <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                لقی کارپێکەر:
+              </span>
+              <span className="font-mono text-indigo-700 dark:text-indigo-300 font-bold truncate max-w-[110px]">
                 {branches.find((b) => b.id === activeBranchId)?.name || 'لقی سەرەکی'}
               </span>
             </div>
-            {onSwitchBranch && (
-              <select
-                value={activeBranchId || 'branch-1'}
-                onChange={(e) => onSwitchBranch(e.target.value)}
-                className="bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold text-indigo-900 dark:text-indigo-200 rounded-lg px-1.5 py-0.5 outline-none cursor-pointer"
-                title="گۆڕینی لق"
-              >
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                    {b.code || b.name}
-                  </option>
-                ))}
-              </select>
-            )}
+
+            <div className="grid grid-cols-2 gap-1 bg-white/80 dark:bg-slate-900/80 p-1 rounded-xl border border-indigo-100 dark:border-indigo-900/60 shadow-xs">
+              {branches.map((b) => {
+                const isSelected = (activeBranchId || 'branch-1') === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => onSwitchBranch(b.id)}
+                    className={`py-1 px-2 rounded-lg text-center font-bold text-[10px] transition-all cursor-pointer truncate ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-white'
+                    }`}
+                  >
+                    🏢 {b.code || b.name.replace(' (سەرەکی)', '')}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

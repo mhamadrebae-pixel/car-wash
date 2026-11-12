@@ -567,13 +567,13 @@ html.dark body {
   transform: rotateY(180deg);
 }
 
-/* Mobile Safe Area Header Padding (Protects against iPhone Dynamic Island & Notch collision) */
+/* Mobile Safe Area Header Padding (Protects against iPhone Dynamic Island & Notch collision without artificial blurry gap) */
 .header-safe-top {
-  padding-top: max(48px, env(safe-area-inset-top, 48px));
+  padding-top: env(safe-area-inset-top, 0px);
 }
 @media (min-width: 640px) {
   .header-safe-top {
-    padding-top: max(10px, env(safe-area-inset-top, 10px));
+    padding-top: 0px;
   }
 }
 

@@ -21,6 +21,8 @@ import {
   ExternalLink,
   Layers,
   ChevronLeft,
+  ChevronDown,
+  Check,
   LogOut,
   Smartphone,
   Sun,
@@ -88,6 +90,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const [notifTab, setNotifTab] = useState<'all' | 'loyalty' | 'stock'>('all');
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  // Custom Modern Branch Selector state
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+  const branchRef = useRef<HTMLDivElement>(null);
+
+  // Close branch dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (branchRef.current && !branchRef.current.contains(e.target as Node)) {
+        setIsBranchDropdownOpen(false);
+      }
+    };
+    if (isBranchDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isBranchDropdownOpen]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -284,7 +305,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   return (
     <header
-      className="header-safe-top min-h-14 sm:min-h-16 h-auto pb-2 border-b border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between select-none sticky top-0 z-30 shadow-xs text-slate-800 dark:text-slate-100 w-full max-w-full overflow-hidden"
+      className="header-safe-top h-14 sm:h-16 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 sm:px-6 flex items-center justify-between select-none sticky top-0 z-30 shadow-xs text-slate-800 dark:text-slate-100 w-full max-w-full overflow-hidden"
     >
       {/* Right side: Mobile Hamburger, Brand Name, Mobile Search Button, Live Desktop Search Bar & Clock */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
@@ -300,77 +321,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         {/* Mobile Facility Title */}
-        <span className="text-xs font-black text-slate-800 dark:text-white truncate max-w-[130px] font-sans block sm:hidden">
+        <span className="text-xs font-black text-slate-800 dark:text-white truncate max-w-[105px] sm:max-w-[160px] font-sans block sm:hidden">
           {settings.carWashName || 'غەسلی دەریا'}
         </span>
-
-        {/* Mobile Search Button (< md screens) */}
-        <button
-          onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-          className={`md:hidden p-2 rounded-xl transition flex items-center justify-center shrink-0 ${
-            isMobileSearchOpen ? 'bg-blue-600 text-white shadow-xs' : 'bg-[#F1F3F7] dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-          }`}
-          title="گەڕان بەدوای تابلۆ یان کڕیار"
-        >
-          <Search className="w-4 h-4" />
-        </button>
-
-        {/* Live Search Bar (Desktop) */}
-        <div className="relative hidden md:block shrink-0">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-[#F1F3F7] dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-xs w-44 lg:w-64 max-w-[260px] focus-within:border-purple-400 focus-within:bg-white dark:focus-within:bg-slate-750 transition-all shadow-xs">
-            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <input
-              type="text"
-              placeholder="گەڕانی خێرا (تابلۆ، کڕیار)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none w-full text-xs font-medium"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shrink-0"
-                title="سڕینەوە"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick Search Floating Results (Desktop) */}
-          {rawQ.length > 0 && (
-            <div className="absolute top-11 right-0 w-80 bg-white/98 dark:bg-slate-900/98 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl backdrop-blur-xl p-2 z-50 space-y-1">
-              <div className="px-2 py-1 text-[10px] text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800 flex justify-between">
-                <span>ئەنجامەکانی گەڕان ({matchedVehicles.length})</span>
-                <span className="text-purple-600 dark:text-purple-400 font-mono">Royal Car Wash</span>
-              </div>
-              {matchedVehicles.length === 0 ? (
-                <div className="p-3 text-center text-xs text-slate-400">
-                  هیچ سەیارەیەک نەدۆزرایەوە بەم ناو یان تابلۆیە!
-                </div>
-              ) : (
-                matchedVehicles.map((v) => (
-                  <div
-                    key={v.id}
-                    onClick={() => {
-                      if (onSelectVehicle) onSelectVehicle(v);
-                      setSearchQuery('');
-                    }}
-                    className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between transition gap-2"
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{v.ownerName}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                        {v.carModel} • {v.color}
-                      </div>
-                    </div>
-                    <PlateDisplay plate={v.plate} size="sm" />
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Compact Clock (Desktop) */}
         <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-[#F1F3F7] dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0">
@@ -382,64 +335,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </div>
 
       {/* Left side: Live Badges, Interactive Notification Bell */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {/* Multi-Branch Selector (لقی ١ و لقی ٢) */}
-        {branches && branches.length > 0 && (
-          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-2xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/70 dark:to-purple-950/70 border border-indigo-200/80 dark:border-indigo-800/80 text-xs text-indigo-950 dark:text-indigo-200 shadow-xs shrink-0">
-            <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <select
-              value={activeBranchId || 'branch-1'}
-              onChange={(e) => onSwitchBranch && onSwitchBranch(e.target.value)}
-              className="bg-transparent font-black text-xs text-indigo-950 dark:text-indigo-100 outline-none cursor-pointer pr-1"
-              title="گۆڕینی لقی کارپێکەر (لقی ١ / لقی ٢)"
-            >
-              {branches.map((b) => (
-                <option
-                  key={b.id}
-                  value={b.id}
-                  className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold"
-                >
-                  🏢 {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Real-time Multi-User Live Sync Pulse */}
-        <div
-          className="hidden sm:flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 text-xs shadow-xs"
-          title="هاوکاتکردنی ڕاستەوخۆ: هەر سەیارە و پارەیەک لێرە یان لە لقەکانی تر و ئامێری تر تۆمار بکرێت، دەستبەجێ بە خودکاری هاوکات دەبێتەوە."
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="text-[11px] font-bold font-mono hidden md:inline">
-            {isSyncing ? 'هاوکات دەبێت...' : 'ڕاستەوخۆ (Live)'}
-          </span>
-        </div>
-
-        {/* Today's Washes Count Live Badge (Hidden on mobile < sm to save space) */}
-        <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200 whitespace-nowrap shrink-0 shadow-xs">
-          <Car className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-          <span className="text-blue-700 dark:text-blue-300 text-[11px] hidden md:inline">شۆردنی ئەمڕۆ:</span>
-          <strong className="text-blue-900 dark:text-blue-100 font-mono font-bold text-xs">
-            {todayWashesCount} <span className="hidden sm:inline">سەیارە</span>
-          </strong>
-        </div>
-
-        {/* Total Revenue Live Badge (Hidden on mobile < sm to eliminate crowding and avoid contradicting today's sales) */}
-        <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-3 rounded-xl sm:rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-950 dark:text-emerald-200 whitespace-nowrap shrink-0 shadow-xs">
-          <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span className="text-emerald-700 dark:text-emerald-300 text-[11px] font-bold">
-            {currentUser?.role === 'cashier' ? 'فرۆشی ئەمڕۆ:' : 'فرۆش و داهات:'}
-          </span>
-          <strong className="text-emerald-950 dark:text-emerald-100 font-mono font-black text-[11px] sm:text-xs">
-            {formatIQD(currentUser?.role === 'cashier' ? todayRevenue : totalRevenue)}
-          </strong>
-        </div>
-
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Network Status Badge (Hidden on mobile < sm to avoid nav bloat) */}
         <div
           className={`hidden sm:flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-2xl border text-xs font-bold transition shrink-0 shadow-xs cursor-default ${
@@ -462,21 +358,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             {isOnline ? 'ئۆنلاین' : 'ئۆفلاین'}
           </span>
         </div>
-
-        {/* Desktop/Tablet Install App Button (Hidden on mobile < sm, available in bottom dock "زیاتر") */}
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('open-pwa-install'));
-            }
-          }}
-          className="hidden sm:flex p-2 sm:px-3 sm:py-2 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:bg-slate-750 text-blue-800 dark:text-blue-300 border border-blue-200/80 dark:border-slate-700 shadow-xs items-center gap-1.5 transition cursor-pointer shrink-0"
-          title="دابەزاندنی سیستەم وەک ئەپ بۆ سەر مۆبایل"
-        >
-          <Smartphone className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-          <span className="text-xs font-black hidden lg:inline">دابەزاندنی ئەپ</span>
-        </button>
 
         {/* Dark / Light Mode Toggle Button */}
         <button
