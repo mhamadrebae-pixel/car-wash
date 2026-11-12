@@ -1,4 +1,4 @@
-const CACHE_NAME = 'carwash-pwa-v1';
+const CACHE_NAME = 'carwash-pwa-v2.2';
 
 const STATIC_ASSETS = [
   '/',
@@ -39,32 +39,45 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Only handle GET requests
-  if (req.method !== 'GET') return;
+  // Only handle GET requests and skip API calls
+  if (req.method !== 'GET' || url.pathname.startsWith('/api')) return;
 
-  // For HTML navigation requests (Page visits)
+  // For HTML navigation requests (Page visits) - Network first, fallback to cache
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
         .then((networkRes) => {
-          // Update cache with fresh copy
-          const copy = networkRes.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          if (networkRes && networkRes.status === 200) {
+            const copy = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
           return networkRes;
         })
-        .catch(() => {
-          // If offline, return cached root page
-          return caches.match('/') || caches.match(req);
-        })
+        .catch(() => caches.match('/') || caches.match(req))
     );
     return;
   }
 
-  // For static assets (fonts, images, scripts, styles)
+  // Next.js chunks & static assets - Network first with cache fallback to prevent stale bundles
+  if (url.pathname.startsWith('/_next/')) {
+    event.respondWith(
+      fetch(req)
+        .then((networkRes) => {
+          if (networkRes && networkRes.status === 200) {
+            const copy = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
+          return networkRes;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // Other static assets (images, fonts) - Cache first, network update in background
   event.respondWith(
     caches.match(req).then((cachedRes) => {
       if (cachedRes) {
-        // Fetch in background to update cache
         fetch(req).then((freshRes) => {
           if (freshRes && freshRes.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(req, freshRes));
