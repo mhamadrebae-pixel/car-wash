@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { formatIQD, normalizeDigits, calculateDaysSince, getSavedInventory, getSavedSettings, isDateToday } from '@/lib/storage';
 import { openWhatsAppChat, generateInactivityReminderMessage } from '@/lib/whatsapp';
-import { Vehicle, AuthUser, ParkingRecord } from '@/types';
+import { Vehicle, AuthUser, ParkingRecord, Branch } from '@/types';
 import { PlateDisplay } from '@/components/ui/PlateDisplay';
 import {
   DollarSign,
@@ -25,6 +25,8 @@ import {
   Smartphone,
   Sun,
   Moon,
+  Building2,
+  RefreshCw,
 } from 'lucide-react';
 
 interface TopHeaderProps {
@@ -41,6 +43,10 @@ interface TopHeaderProps {
   onLogout?: () => void;
   currentTheme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  branches?: Branch[];
+  activeBranchId?: string;
+  onSwitchBranch?: (branchId: string) => void;
+  isSyncing?: boolean;
 }
 
 interface NotificationItem {
@@ -66,6 +72,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onLogout,
   currentTheme = 'light',
   onToggleTheme,
+  branches = [],
+  activeBranchId,
+  onSwitchBranch,
+  isSyncing = false,
 }) => {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -144,6 +154,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
     return washToday + garageToday;
   }, [vehicles, parkingRecords]);
+
+  // Calculate today's completed washes count
+  const todayWashesCount = useMemo(() => {
+    return vehicles.reduce((acc, v) => {
+      const vehicleTodayCount = (v.washHistory || []).filter((w) => isDateToday(w.date)).length;
+      return acc + vehicleTodayCount;
+    }, 0);
+  }, [vehicles]);
 
   const rawNotifications: NotificationItem[] = [];
 
@@ -365,12 +383,49 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
       {/* Left side: Live Badges, Interactive Notification Bell */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {/* Active Bays Live Badge (Hidden on mobile < sm to save space, visible in bottom dock & dashboard) */}
+        {/* Multi-Branch Selector (لقی ١ و لقی ٢) */}
+        {branches && branches.length > 0 && (
+          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-2xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/70 dark:to-purple-950/70 border border-indigo-200/80 dark:border-indigo-800/80 text-xs text-indigo-950 dark:text-indigo-200 shadow-xs shrink-0">
+            <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <select
+              value={activeBranchId || 'branch-1'}
+              onChange={(e) => onSwitchBranch && onSwitchBranch(e.target.value)}
+              className="bg-transparent font-black text-xs text-indigo-950 dark:text-indigo-100 outline-none cursor-pointer pr-1"
+              title="گۆڕینی لقی کارپێکەر (لقی ١ / لقی ٢)"
+            >
+              {branches.map((b) => (
+                <option
+                  key={b.id}
+                  value={b.id}
+                  className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold"
+                >
+                  🏢 {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Real-time Multi-User Live Sync Pulse */}
+        <div
+          className="hidden sm:flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 text-xs shadow-xs"
+          title="هاوکاتکردنی ڕاستەوخۆ: هەر سەیارە و پارەیەک لێرە یان لە لقەکانی تر و ئامێری تر تۆمار بکرێت، دەستبەجێ بە خودکاری هاوکات دەبێتەوە."
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="text-[11px] font-bold font-mono hidden md:inline">
+            {isSyncing ? 'هاوکات دەبێت...' : 'ڕاستەوخۆ (Live)'}
+          </span>
+        </div>
+
+        {/* Today's Washes Count Live Badge (Hidden on mobile < sm to save space) */}
         <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200 whitespace-nowrap shrink-0 shadow-xs">
           <Car className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-          <span className="text-blue-700 dark:text-blue-300 text-[11px] hidden md:inline">لە غەسلدا:</span>
+          <span className="text-blue-700 dark:text-blue-300 text-[11px] hidden md:inline">شۆردنی ئەمڕۆ:</span>
           <strong className="text-blue-900 dark:text-blue-100 font-mono font-bold text-xs">
-            {activeCarsInBay} <span className="hidden sm:inline">سەیارە</span>
+            {todayWashesCount} <span className="hidden sm:inline">سەیارە</span>
           </strong>
         </div>
 

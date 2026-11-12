@@ -9,6 +9,7 @@ import {
   ServiceItem,
   AppSettings,
   InventoryItem,
+  MaterialPurchase,
   RoadmapItem,
   DailyZReport,
   CafeItem,
@@ -22,9 +23,11 @@ import {
   defaultServices,
   defaultSettings,
   defaultInventoryItems,
+  defaultMaterialPurchases,
   defaultRoadmapItems,
   defaultCafeItems,
   defaultParkingRecords,
+  defaultBranches,
 } from '@/constants/initialData';
 
 export interface DatabasePayload {
@@ -35,6 +38,7 @@ export interface DatabasePayload {
   services: ServiceItem[];
   settings: AppSettings;
   inventory: InventoryItem[];
+  materialPurchases?: MaterialPurchase[];
   roadmap: RoadmapItem[];
   cafeItems: CafeItem[];
   zreports: DailyZReport[];
@@ -89,6 +93,7 @@ export function getInitialDatabasePayload(): DatabasePayload {
     services: defaultServices,
     settings: defaultSettings,
     inventory: defaultInventoryItems,
+    materialPurchases: defaultMaterialPurchases,
     roadmap: defaultRoadmapItems,
     cafeItems: defaultCafeItems,
     zreports: [],
@@ -96,6 +101,56 @@ export function getInitialDatabasePayload(): DatabasePayload {
     lastUpdated: new Date().toISOString(),
     version: '2026-production-v1',
   };
+}
+
+// Intelligent Concurrency Merging for Multi-User & Multi-Device
+function mergeVehicles(incoming?: Vehicle[], current?: Vehicle[]): Vehicle[] {
+  if (!incoming || incoming.length === 0) return current || [];
+  if (!current || current.length === 0) return incoming;
+
+  const map = new Map<string, Vehicle>();
+  current.forEach((v) => map.set(v.id, v));
+
+  incoming.forEach((v) => {
+    const existing = map.get(v.id);
+    if (!existing) {
+      map.set(v.id, v);
+    } else {
+      // Merge wash histories by unique wash ID
+      const washMap = new Map<string, any>();
+      (existing.washHistory || []).forEach((w) => washMap.set(w.id, w));
+      (v.washHistory || []).forEach((w) => washMap.set(w.id, w));
+      const mergedWashes = Array.from(washMap.values()).sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      // Determine the fresher metadata (using bayEntryTime or lastVisitDate)
+      const existingTime = new Date(existing.bayEntryTime || existing.lastVisitDate || existing.registeredDate || 0).getTime();
+      const incomingTime = new Date(v.bayEntryTime || v.lastVisitDate || v.registeredDate || 0).getTime();
+      const fresher = incomingTime >= existingTime ? v : existing;
+
+      map.set(v.id, {
+        ...fresher,
+        washHistory: mergedWashes,
+        totalWashes: mergedWashes.length,
+      });
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+function mergeEntitiesById<T extends { id: string }>(incoming?: T[], current?: T[]): T[] {
+  if (!incoming) return current || [];
+  if (!current) return incoming;
+  const map = new Map<string, T>();
+  current.forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  incoming.forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  return Array.from(map.values());
 }
 
 // Read database from disk (local fallback)
@@ -109,18 +164,23 @@ function readLocalDatabase(): DatabasePayload {
     }
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
+    const parsedSettings = parsed.settings || defaultSettings;
+    if (!parsedSettings.branches || parsedSettings.branches.length === 0) {
+      parsedSettings.branches = defaultBranches;
+    }
     return {
       vehicles: Array.isArray(parsed.vehicles) ? parsed.vehicles : [],
       expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
       setupItems: Array.isArray(parsed.setupItems) ? parsed.setupItems : [],
       staff: Array.isArray(parsed.staff) ? parsed.staff : defaultStaffMembers,
       services: Array.isArray(parsed.services) ? parsed.services : defaultServices,
-      settings: parsed.settings || defaultSettings,
+      settings: parsedSettings,
       inventory: Array.isArray(parsed.inventory)
         ? (parsed.inventory.some((i: any) => i?.name && i.name.toLowerCase().includes('koch'))
             ? parsed.inventory
             : [defaultInventoryItems[0], ...parsed.inventory])
         : defaultInventoryItems,
+      materialPurchases: Array.isArray(parsed.materialPurchases) ? parsed.materialPurchases : defaultMaterialPurchases,
       roadmap: Array.isArray(parsed.roadmap) ? parsed.roadmap : defaultRoadmapItems,
       cafeItems: Array.isArray(parsed.cafeItems) ? parsed.cafeItems : defaultCafeItems,
       zreports: Array.isArray(parsed.zreports) ? parsed.zreports : [],
@@ -153,14 +213,19 @@ export async function readServerDatabase(): Promise<DatabasePayload> {
     try {
       const data = await redis.get<DatabasePayload>('carwash_db');
       if (data && typeof data === 'object') {
+        const settings = data.settings || defaultSettings;
+        if (!settings.branches || settings.branches.length === 0) {
+          settings.branches = defaultBranches;
+        }
         return {
           vehicles: Array.isArray(data.vehicles) ? data.vehicles : [],
           expenses: Array.isArray(data.expenses) ? data.expenses : [],
           setupItems: Array.isArray(data.setupItems) ? data.setupItems : [],
           staff: Array.isArray(data.staff) ? data.staff : defaultStaffMembers,
           services: Array.isArray(data.services) ? data.services : defaultServices,
-          settings: data.settings || defaultSettings,
+          settings,
           inventory: Array.isArray(data.inventory) ? data.inventory : defaultInventoryItems,
+          materialPurchases: Array.isArray(data.materialPurchases) ? data.materialPurchases : defaultMaterialPurchases,
           roadmap: Array.isArray(data.roadmap) ? data.roadmap : defaultRoadmapItems,
           cafeItems: Array.isArray(data.cafeItems) ? data.cafeItems : defaultCafeItems,
           zreports: Array.isArray(data.zreports) ? data.zreports : [],
@@ -184,20 +249,71 @@ export async function readServerDatabase(): Promise<DatabasePayload> {
 // Write server database (Primary: Upstash Redis in Cloud | Fallback: Local Disk)
 export async function writeServerDatabase(data: Partial<DatabasePayload>): Promise<DatabasePayload> {
   const current = await readServerDatabase();
+
+  const mergedVehiclesList = data.vehicles !== undefined
+    ? mergeVehicles(data.vehicles, current.vehicles)
+    : current.vehicles;
+
+  const mergedExpenses = data.expenses !== undefined
+    ? mergeEntitiesById(data.expenses, current.expenses)
+    : current.expenses;
+
+  const mergedSetupItems = data.setupItems !== undefined
+    ? mergeEntitiesById(data.setupItems, current.setupItems)
+    : current.setupItems;
+
+  const mergedStaff = data.staff !== undefined
+    ? mergeEntitiesById(data.staff, current.staff)
+    : current.staff;
+
+  const mergedServices = data.services !== undefined
+    ? mergeEntitiesById(data.services, current.services)
+    : current.services;
+
+  const mergedSettings = data.settings !== undefined
+    ? {
+        ...current.settings,
+        ...data.settings,
+        branches: (data.settings.branches && data.settings.branches.length > 0)
+          ? data.settings.branches
+          : (current.settings.branches || defaultBranches),
+      }
+    : current.settings;
+
+  const mergedInventory = data.inventory !== undefined
+    ? mergeEntitiesById(data.inventory, current.inventory)
+    : current.inventory;
+
+  const mergedRoadmap = data.roadmap !== undefined
+    ? mergeEntitiesById(data.roadmap, current.roadmap)
+    : current.roadmap;
+
+  const mergedCafeItems = data.cafeItems !== undefined
+    ? mergeEntitiesById(data.cafeItems, current.cafeItems || defaultCafeItems)
+    : (current.cafeItems || defaultCafeItems);
+
+  const mergedZReports = data.zreports !== undefined
+    ? mergeEntitiesById(data.zreports, current.zreports)
+    : current.zreports;
+
+  const mergedParking = data.parkingRecords !== undefined
+    ? mergeEntitiesById(data.parkingRecords, current.parkingRecords || defaultParkingRecords)
+    : (current.parkingRecords || defaultParkingRecords);
+
   const updated: DatabasePayload = {
-    vehicles: data.vehicles !== undefined ? data.vehicles : current.vehicles,
-    expenses: data.expenses !== undefined ? data.expenses : current.expenses,
-    setupItems: data.setupItems !== undefined ? data.setupItems : current.setupItems,
-    staff: data.staff !== undefined ? data.staff : current.staff,
-    services: data.services !== undefined ? data.services : current.services,
-    settings: data.settings !== undefined ? data.settings : current.settings,
-    inventory: data.inventory !== undefined ? data.inventory : current.inventory,
-    roadmap: data.roadmap !== undefined ? data.roadmap : current.roadmap,
-    cafeItems: data.cafeItems !== undefined ? data.cafeItems : current.cafeItems || defaultCafeItems,
-    zreports: data.zreports !== undefined ? data.zreports : current.zreports,
-    parkingRecords: data.parkingRecords !== undefined ? data.parkingRecords : (current.parkingRecords || defaultParkingRecords),
+    vehicles: mergedVehiclesList,
+    expenses: mergedExpenses,
+    setupItems: mergedSetupItems,
+    staff: mergedStaff,
+    services: mergedServices,
+    settings: mergedSettings,
+    inventory: mergedInventory,
+    roadmap: mergedRoadmap,
+    cafeItems: mergedCafeItems,
+    zreports: mergedZReports,
+    parkingRecords: mergedParking,
     lastUpdated: new Date().toISOString(),
-    version: '2026-11-09-v1',
+    version: '2026-production-v1',
   };
 
   const redis = getRedisClient();

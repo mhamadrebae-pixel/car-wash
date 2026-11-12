@@ -16,6 +16,7 @@ import {
   SelectedCafeItem,
   ParkingRecord,
   CarpetSpecs,
+  Branch,
 } from '@/types';
 import { PlateDisplay } from '@/components/ui/PlateDisplay';
 import { ReceiptModal } from '@/components/ui/ReceiptModal';
@@ -72,6 +73,8 @@ import {
   LogOut,
   Trash2,
   RotateCw,
+  Building2,
+  Search,
 } from 'lucide-react';
 
 interface CashierCommandProps {
@@ -83,6 +86,9 @@ interface CashierCommandProps {
   onUpdateVehicles: (vehicles: Vehicle[]) => void;
   onNotify: (msg: string) => void;
   initialBay?: number;
+  branches?: Branch[];
+  activeBranchId?: string;
+  onSwitchBranch?: (branchId: string) => void;
 }
 
 export const CashierCommand: React.FC<CashierCommandProps> = ({
@@ -94,9 +100,26 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
   onUpdateVehicles,
   onNotify,
   initialBay,
+  branches = [],
+  activeBranchId = 'branch-1',
+  onSwitchBranch,
 }) => {
-  const numBays = Math.max(1, Math.min(6, settings.numberOfBays || 3));
+  const currentBranch = useMemo(() => {
+    return (branches || []).find((b) => b.id === activeBranchId) || (branches || [])[0];
+  }, [branches, activeBranchId]);
+
+  const numBays = Math.max(1, Math.min(6, currentBranch?.numberOfBays || settings.numberOfBays || 3));
   const bays = Array.from({ length: numBays }, (_, i) => i + 1);
+
+  const effectiveReceiptSettings = useMemo(() => {
+    if (!currentBranch) return settings;
+    return {
+      ...settings,
+      carWashName: `${settings.carWashName} - ${currentBranch.name}`,
+      carWashAddress: currentBranch.address || settings.carWashAddress,
+      carWashPhone: currentBranch.phone || settings.carWashPhone,
+    };
+  }, [settings, currentBranch]);
 
   // -------------------------------------------------------------
   // 1. FAST REGISTRATION FORM STATE (کاشێری خێرا)
@@ -739,6 +762,9 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     const finalPrice = isFree ? 0 : calculateServicePrice(srv, vehicleSize);
     const workerCommission = calculateWorkerCommission(worker, finalPrice);
 
+    const isPaidNow = shouldPrintReceipt;
+    const initialStage = isPaidNow ? ('کەفڕێژکردن' as const) : ('چاوەڕوانی' as const);
+
     const newRecord: WashRecord = {
       id: `w-${Date.now()}`,
       date: nowISO,
@@ -751,7 +777,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
       staffId: worker?.id,
       staffName: worker?.name,
       paymentMethod: 'cash' as const,
-      paymentStatus: 'paid' as const,
+      paymentStatus: isPaidNow ? ('paid' as const) : ('unpaid' as const),
       workerCommission,
       isSubscriptionWash: isVip,
       branchId: selectedBranch,
@@ -780,6 +806,8 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           ? matchedExistingVehicle.freeWashesClaimed + 1
           : matchedExistingVehicle.freeWashesClaimed,
         lastVisitDate: nowISO,
+        washStage: initialStage,
+        bayEntryTime: nowISO,
         branchId: selectedBranch,
         branchName,
         washHistory: [newRecord, ...existingWashHistory],
@@ -805,6 +833,8 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
         lastVisitDate: nowISO,
         registeredDate: nowISO,
         status: 'active',
+        washStage: initialStage,
+        bayEntryTime: nowISO,
         branchId: selectedBranch,
         branchName,
         washHistory: [newRecord],
@@ -1022,6 +1052,66 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
   const todaySalesTotal = todayWashRevenue + todayGarageRevenue;
   const todayWashesCount = todayWashes.length;
 
+  // Flat list of all sales from vehicles washHistory for today
+  const todaySalesList = useMemo(() => {
+    const list: Array<{
+      vehicle: Vehicle;
+      record: WashRecord;
+    }> = [];
+
+    vehicles.forEach((v) => {
+      (v.washHistory || []).forEach((w) => {
+        if (isDateToday(w.date)) {
+          list.push({ vehicle: v, record: w });
+        }
+      });
+    });
+
+    // Sort newest first
+    return list.sort((a, b) => new Date(b.record.date).getTime() - new Date(a.record.date).getTime());
+  }, [vehicles]);
+
+  const branch1Count = useMemo(
+    () => todaySalesList.filter((item) => (item.record.branchId || item.vehicle.branchId || 'branch-1') === 'branch-1').length,
+    [todaySalesList]
+  );
+  const branch2Count = useMemo(
+    () => todaySalesList.filter((item) => (item.record.branchId || item.vehicle.branchId) === 'branch-2').length,
+    [todaySalesList]
+  );
+
+  const filteredTodaySales = useMemo(() => {
+    return todaySalesList.filter(({ vehicle, record }) => {
+      // Branch filter
+      if (salesBranchFilter !== 'all') {
+        const itemBranch = record.branchId || vehicle.branchId || 'branch-1';
+        if (itemBranch !== salesBranchFilter) return false;
+      }
+      // Search filter
+      if (salesSearch.trim()) {
+        const query = salesSearch.trim().toLowerCase();
+        const pNum = vehicle.plate.number || vehicle.plate.oldNumber || '';
+        const prov = vehicle.plate.provinceCode || '';
+        const owner = (vehicle.ownerName || '').toLowerCase();
+        const phone = (vehicle.phone || '').toLowerCase();
+        const model = (vehicle.carModel || '').toLowerCase();
+        return (
+          pNum.includes(query) ||
+          prov.includes(query) ||
+          owner.includes(query) ||
+          phone.includes(query) ||
+          model.includes(query)
+        );
+      }
+      return true;
+    });
+  }, [todaySalesList, salesBranchFilter, salesSearch]);
+
+  const filteredSalesTotal = useMemo(
+    () => filteredTodaySales.reduce((sum, item) => sum + (Number(item.record.price) || 0), 0),
+    [filteredTodaySales]
+  );
+
   // Manual Server Sync & Demo Data Helpers
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -1058,11 +1148,112 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     onNotify('🎉 ٩ شۆردنی ئەمڕۆ (٢١٨,٠٠٠ دینار) و هۆڵە چالاکەکان بارکران!');
   };
 
-  // Active Bay Vehicles & Stats
-  const activeYardCars = vehicles.filter((v) => v.currentBay !== undefined);
+  // Active Yard Vehicles & Categorized Lists (Scoped to Active Branch)
+  const activeYardCars = vehicles.filter((v) => {
+    if (!v.washStage) return false;
+    if (activeBranchId) {
+      const vBranch = v.currentBayBranchId || v.branchId || 'branch-1';
+      return vBranch === activeBranchId;
+    }
+    return true;
+  });
+  const waitingCars = activeYardCars.filter((v) => v.washStage === 'چاوەڕوانی');
+  const washingCars = activeYardCars.filter(
+    (v) => v.washStage && v.washStage !== 'چاوەڕوانی' && v.washStage !== 'تەواوبوو'
+  );
+  const readyCars = activeYardCars.filter((v) => v.washStage === 'تەواوبوو');
+  const unpaidCars = activeYardCars.filter(
+    (v) => v.washHistory?.[0]?.paymentStatus === 'unpaid'
+  );
   const activeCarsInBaysCount = activeYardCars.length;
-  const readyCarsCount = vehicles.filter((v) => v.currentBay !== undefined && v.washStage === 'تەواوبوو').length;
-  const queueVehicles = vehicles.filter((v) => !v.currentBay && v.washStage === 'چاوەڕوانی');
+  const readyCarsCount = readyCars.length;
+  const queueVehicles = waitingCars;
+
+  // Active Workspace Tab Filter
+  const [activeListTab, setActiveListTab] = useState<'all' | 'waiting' | 'washing' | 'unpaid' | 'ready'>('all');
+
+  const displayedYardCars = activeYardCars.filter((v) => {
+    if (activeListTab === 'waiting') return v.washStage === 'چاوەڕوانی';
+    if (activeListTab === 'washing') return v.washStage && v.washStage !== 'چاوەڕوانی' && v.washStage !== 'تەواوبوو';
+    if (activeListTab === 'ready') return v.washStage === 'تەواوبوو';
+    if (activeListTab === 'unpaid') return v.washHistory?.[0]?.paymentStatus === 'unpaid';
+    return true;
+  });
+
+  // Action: Start Washing a waiting vehicle
+  const handleStartWashing = (vehicleId: string) => {
+    const updated = vehicles.map((v) => {
+      if (v.id === vehicleId) {
+        return {
+          ...v,
+          washStage: 'کەفڕێژکردن' as const,
+          bayEntryTime: new Date().toISOString(),
+        };
+      }
+      return v;
+    });
+    onUpdateVehicles(updated);
+    if (soundEnabled) playPosSound('beep');
+    onNotify('🚿 سەیارەکە خرایە ناو شۆردن (قۆناغی کەفڕێژکردن).');
+  };
+
+  // Action: 1-click Mark as Paid & print receipt
+  const handleMarkAsPaid = (vehicle: Vehicle, paymentMethod: PaymentMethod = 'cash') => {
+    const updated = vehicles.map((v) => {
+      if (v.id === vehicle.id) {
+        const history = [...(v.washHistory || [])];
+        if (history.length > 0) {
+          history[0] = {
+            ...history[0],
+            paymentStatus: 'paid' as const,
+            paymentMethod,
+          };
+        }
+        return {
+          ...v,
+          washHistory: history,
+        };
+      }
+      return v;
+    });
+
+    onUpdateVehicles(updated);
+    if (soundEnabled) playPosSound('success');
+    onNotify(`💰 پارەی سەیارەی ${vehicle.carModel || 'سەیارە'} بە سەرکەوتوویی واسڵکرا!`);
+
+    // Prepare & print receipt
+    const updatedV = updated.find((v) => v.id === vehicle.id);
+    if (updatedV) {
+      handleQuickPrintReceipt(updatedV, updatedV.washHistory?.[0]);
+    }
+  };
+
+  // Action: Complete and release car from yard
+  const handleCompleteAndExit = (vehicle: Vehicle) => {
+    const latest = vehicle.washHistory?.[0];
+    if (latest && latest.paymentStatus === 'unpaid') {
+      handleInitiateCheckout(vehicle);
+      return;
+    }
+
+    const updated = vehicles.map((v) => {
+      if (v.id === vehicle.id) {
+        return {
+          ...v,
+          washStage: undefined,
+          bayEntryTime: undefined,
+          currentBay: undefined,
+          assignedWorkerId: undefined,
+          assignedWorkerName: undefined,
+        };
+      }
+      return v;
+    });
+
+    onUpdateVehicles(updated);
+    if (soundEnabled) playPosSound('beep');
+    onNotify(`🏁 سەیارەی ${vehicle.carModel || 'سەیارە'} تەواو بوو و دەربازکرا.`);
+  };
 
   // Selected Service object
   const currentSelectedService =
@@ -1128,23 +1319,15 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
             <span>{isSyncing ? 'نوێکردنەوە...' : 'تازەکردنەوەی داتا'}</span>
           </button>
 
-          {/* Yard Live Status Pill */}
-          <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-xs flex items-center gap-2 text-slate-600 dark:text-slate-300 shadow-2xs shrink-0">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>لە غەسلدا:</span>
-              <strong className="text-slate-900 dark:text-white font-mono font-bold">
-                {activeYardCars.length} سەیارە
+          {/* Active Branch Status Pill */}
+          <div className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/70 text-xs flex items-center gap-2 text-blue-900 dark:text-blue-200 shadow-2xs shrink-0">
+            <div className="flex items-center gap-1.5 font-bold">
+              <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>لق:</span>
+              <strong className="text-blue-950 dark:text-white font-black">
+                {selectedBranch === 'branch-1' ? 'لقی ١ (سەرەکی)' : 'لقی ٢'}
               </strong>
             </div>
-            {readyCarsCount > 0 && (
-              <>
-                <span className="text-slate-300 dark:text-slate-600">•</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                  {readyCarsCount} تەواوبووە ✨
-                </span>
-              </>
-            )}
           </div>
 
           {/* Unpaid / Debt Cars Button */}
@@ -1287,39 +1470,44 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           </div>
         </div>
 
-        {/* 3. Active in Wash Yard Card */}
-        <div className="bg-gradient-to-br from-amber-50 via-orange-50/80 to-amber-100/50 dark:from-amber-950/70 dark:via-slate-900 dark:to-orange-950/50 border-2 border-amber-300 dark:border-amber-500/70 rounded-2xl p-4 flex items-center justify-between shadow-xs transition hover:shadow-md">
-          <div className="space-y-1">
-            <span className="text-xs text-amber-900 dark:text-amber-300 font-extrabold block">
-              سەیارە لە ناو غەسلدا
-            </span>
-            <strong className="text-xl sm:text-2xl font-black text-amber-950 dark:text-amber-100 font-mono tracking-tight block">
-              {activeYardCars.length} <span className="text-xs font-sans font-bold text-amber-800 dark:text-amber-300">سەیارە</span>
-            </strong>
-            <span className="text-[10px] bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded-full font-bold inline-block">
-              {readyCarsCount > 0 ? `${readyCarsCount} سەیارە تەواوبووە ✨` : 'شۆردنی ڕاستەوخۆ 🚿'}
-            </span>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-amber-600 text-white dark:bg-amber-500 shadow-md shadow-amber-600/30 flex items-center justify-center shrink-0">
-            <Car className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* 4. Total Registered Vehicles Card */}
+        {/* 3. Total Registered Customers Card */}
         <div className="bg-gradient-to-br from-purple-50 via-fuchsia-50/80 to-purple-100/50 dark:from-purple-950/70 dark:via-slate-900 dark:to-fuchsia-950/50 border-2 border-purple-300 dark:border-purple-500/70 rounded-2xl p-4 flex items-center justify-between shadow-xs transition hover:shadow-md">
           <div className="space-y-1">
             <span className="text-xs text-purple-800 dark:text-purple-300 font-extrabold block">
-              تۆماری سەیارەکان
+              کڕیارە تۆمارکراوەکان
             </span>
             <strong className="text-xl sm:text-2xl font-black text-purple-950 dark:text-purple-100 font-mono tracking-tight block">
-              {vehicles.length} <span className="text-xs font-sans font-bold text-purple-700 dark:text-purple-300">سەیارە</span>
+              {vehicles.length} <span className="text-xs font-sans font-bold text-purple-700 dark:text-purple-300">کڕیار</span>
             </strong>
             <span className="text-[10px] bg-purple-200/80 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 px-2 py-0.5 rounded-full font-bold inline-block">
-              کڕیارانی بەفاداری NFC
+              سیستەمی بەفاداری هاوبەش
             </span>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-purple-600 text-white dark:bg-purple-500 shadow-md shadow-purple-600/30 flex items-center justify-center shrink-0">
-            <Sparkles className="w-6 h-6" />
+            <User className="w-6 h-6" />
+          </div>
+        </div>
+
+        {/* 4. Total Outstanding Debt Card */}
+        <div className="bg-gradient-to-br from-rose-50 via-orange-50/80 to-rose-100/50 dark:from-rose-950/70 dark:via-slate-900 dark:to-orange-950/50 border-2 border-rose-300 dark:border-rose-500/70 rounded-2xl p-4 flex items-center justify-between shadow-xs transition hover:shadow-md">
+          <div className="space-y-1">
+            <span className="text-xs text-rose-800 dark:text-rose-300 font-extrabold block">
+              قەرزی پاکتاونەکراو
+            </span>
+            <strong className="text-xl sm:text-2xl font-black text-rose-950 dark:text-rose-100 font-mono tracking-tight block">
+              {formatIQD(totalDebtOutstanding)}
+            </strong>
+            <button
+              type="button"
+              onClick={() => setShowDebtListModal(true)}
+              className="text-[10px] bg-rose-200/80 hover:bg-rose-300 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1 cursor-pointer transition"
+            >
+              <Coins className="w-3 h-3" />
+              <span>{unpaidRecordsList.length} پسوولەی قەرز • پاکتاوکردن</span>
+            </button>
+          </div>
+          <div className="w-11 h-11 rounded-2xl bg-rose-600 text-white dark:bg-rose-500 shadow-md shadow-rose-600/30 flex items-center justify-center shrink-0">
+            <Coins className="w-6 h-6" />
           </div>
         </div>
       </div>
@@ -1361,8 +1549,8 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Car className="w-3.5 h-3.5" />
-          <span>لە غەسلدا ({activeYardCars.length})</span>
+          <Receipt className="w-3.5 h-3.5" />
+          <span>فرۆشەکان ({todaySalesList.length})</span>
         </button>
         <button
           type="button"
@@ -1394,6 +1582,40 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl">
               {entryMode === 'car' ? 'شۆردنی سەیارە' : 'فەرش بە مەتر دووجا (م²)'}
             </span>
+          </div>
+
+          {/* Branch Selector: لقی ١ (سەرەکی) vs لقی ٢ */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedBranch('branch-1');
+                try { localStorage.setItem('carwash_active_branch', 'branch-1'); } catch {}
+              }}
+              className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                selectedBranch === 'branch-1'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>🏢 لقی ١ (سەرەکی)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedBranch('branch-2');
+                try { localStorage.setItem('carwash_active_branch', 'branch-2'); } catch {}
+              }}
+              className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                selectedBranch === 'branch-2'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>🏢 لقی ٢</span>
+            </button>
           </div>
 
           {/* Service Mode Selector: Car Wash vs Carpet & Furniture */}
@@ -1951,9 +2173,9 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
                 </div>
               </div>
 
-              {/* Big Action Submit Buttons */}
+              {/* Action Submit Buttons */}
               <div className="space-y-2 pt-2">
-                {/* 1. Primary: Register & Print Receipt Immediately upon arrival */}
+                {/* 1. Register & Print Receipt Immediately */}
                 <button
                   type="submit"
                   onClick={(e) => {
@@ -1966,7 +2188,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
                   <span>تۆمارکردن و بڕینی پسوولە (دەستپێکردنی شۆردن) 🖨️</span>
                 </button>
 
-                {/* 2. Secondary: Register without printing yet (Post-pay at exit) */}
+                {/* 2. Register without printing yet (Post-pay at exit) */}
                 <button
                   type="button"
                   onClick={() => handleFastRegisterAndAdmit(undefined, false)}
@@ -1980,242 +2202,240 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           )}
         </div>
 
-        {/* ---------------- COLUMN 2: ACTIVE CARS IN WASH (7 Cols) ---------------- */}
+        {/* ---------------- COLUMN 2: TODAY'S LIVE SALES & INVOICES FEED (7 Cols) ---------------- */}
         <div
           className={`lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4 text-slate-900 dark:text-slate-100 ${
             mobileActiveView === 'register' ? 'hidden lg:block' : 'block'
           }`}
         >
           {/* Header */}
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                <Car className="w-4 h-4" />
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Receipt className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  سەیارەکانی ناو غەسل (ساحەی شۆردن)
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <span>فرۆش و پسوولەکانی ئەمڕۆ</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold">
+                    {filteredTodaySales.length} فرۆش
+                  </span>
                 </h3>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  تایمەری ڕاستەوخۆ، قۆناغەکانی کارکردن، بڕینی پسوولە و تەسفیە
-                </span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                  لیستی خێرای پسوولەکان، دووبارە چاپکردنەوە، و ئاگاداری واتسئەپ
+                </p>
               </div>
             </div>
 
-            <span className="text-xs px-3 py-1.5 rounded-full font-black bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-2xs">
-              {activeYardCars.length} سەیارە لە غەسلدا
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-3 py-1.5 rounded-full font-black bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs font-mono">
+                کۆی گشتی: {formatIQD(filteredSalesTotal)}
+              </span>
+            </div>
           </div>
 
-          {/* Active Cars List or Clean Empty State */}
-          {activeYardCars.length === 0 ? (
+          {/* Search Bar & Branch Filter Chips */}
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Live Search Input */}
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="گەڕان بەپێی تابلۆ، ناوی کڕیار، مۆبایل، مۆدێل..."
+                  value={salesSearch}
+                  onChange={(e) => setSalesSearch(e.target.value)}
+                  className="w-full pr-8 pl-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+                />
+                {salesSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setSalesSearch('')}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Branch Filter Tabs */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSalesBranchFilter('all')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    salesBranchFilter === 'all'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  هەمووی ({todaySalesList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSalesBranchFilter('branch-1')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                    salesBranchFilter === 'branch-1'
+                      ? 'bg-blue-600 text-white shadow-2xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Building2 className="w-3 h-3" />
+                  <span>لقی ١ ({branch1Count})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSalesBranchFilter('branch-2')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                    salesBranchFilter === 'branch-2'
+                      ? 'bg-blue-600 text-white shadow-2xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Building2 className="w-3 h-3" />
+                  <span>لقی ٢ ({branch2Count})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Sales Feed Stream */}
+          {filteredTodaySales.length === 0 ? (
             <div className="py-14 text-center space-y-3 bg-slate-50/60 dark:bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700/80">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-50 dark:bg-slate-800 border border-blue-200/80 dark:border-slate-700 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
-                <Car className="w-7 h-7" />
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 dark:bg-slate-800 border border-emerald-200/80 dark:border-slate-700 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xs">
+                <Receipt className="w-7 h-7" />
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-black text-slate-800 dark:text-slate-200">
-                  لە ئێستادا هیچ سەیارەیەک لە غەسلدا نییە
+                  {salesSearch ? 'هیچ فرۆشێک بەم گەڕانە نەدۆزرایەوە' : 'هیچ فرۆشێک بۆ ئەم لقە لەمڕۆدا تۆمار نەکراوە'}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  غەسل ئامادەیە. کاتێک سەیارەیەک لە فۆڕمی دەستەچپەوە تۆمار دەکەیت، ڕاستەوخۆ لێرەدا دەردەکەوێت بە تایمەری زیندوو.
+                  {salesSearch
+                    ? 'تکایە دڵنیابەرەوە لە دروستی ژمارەی تابلۆ یان ناوی کڕیارەکە.'
+                    : 'کاتێک لە فۆڕمی دەستەچپ سەیارە تۆمار دەکەیت، ڕاستەوخۆ لێرە دەردەکەوێت و پسوولەکەی چاپ دەبێت.'}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {activeYardCars.map((car, idx) => {
-                const entryTime = car.bayEntryTime || car.lastVisitDate;
-                const elapsedMins = entryTime
-                  ? Math.max(0, Math.floor((Date.now() - new Date(entryTime).getTime()) / (1000 * 60)))
-                  : 0;
-                const isOvertime = elapsedMins >= 30;
-                const isWarning = elapsedMins >= 15 && elapsedMins < 30;
-                const isReady = car.washStage === 'تەواوبوو';
+            <div className="space-y-2.5 max-h-[680px] overflow-y-auto pr-0.5 overscroll-contain">
+              {filteredTodaySales.map(({ vehicle, record }, idx) => {
+                const timeString = new Date(record.date).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+                });
+                const isDebt = record.paymentStatus === 'unpaid' || record.paymentMethod === 'debt';
+                const branchName = record.branchName || (record.branchId === 'branch-2' ? 'لقی ٢' : 'لقی ١');
 
                 return (
                   <div
-                    key={car.id}
-                    className={`rounded-2xl p-4 flex flex-col justify-between transition-all border-2 shadow-xs space-y-3 ${
-                      isReady
-                        ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-400 dark:border-emerald-600 ring-2 ring-emerald-500/10'
-                        : isOvertime
-                        ? 'bg-rose-50/50 dark:bg-rose-950/40 border-rose-400 dark:border-rose-600 ring-2 ring-rose-500/10'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-400'
-                    }`}
+                    key={record.id || `${vehicle.id}-${idx}`}
+                    className="p-3.5 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-2xl shadow-xs transition flex flex-col gap-2.5"
                   >
-                    {/* Card Top: Number, Timer, Close Button */}
-                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2.5">
+                    {/* Top Row: Time, Branch, Status, Price */}
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/70 pb-2">
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-blue-600 text-white text-xs font-black flex items-center justify-center font-mono shadow-2xs">
+                        <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-mono font-black flex items-center justify-center">
                           {idx + 1}
                         </span>
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
-                          {car.carModel || 'سەیارە'}
+                        <span className="text-xs font-mono text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <span>{timeString}</span>
                         </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 flex items-center gap-1">
+                          <Building2 className="w-2.5 h-2.5" />
+                          <span>{branchName}</span>
+                        </span>
+                        {record.isFree ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+                            🎁 بەخۆڕایی (Loyalty)
+                          </span>
+                        ) : isDebt ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300">
+                            ⚠️ قەرز
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200">
+                            ✅ پارەدراو ({record.paymentMethod === 'fastpay' ? 'فاستپەی' : record.paymentMethod === 'fib' ? 'FIB' : 'کاش'})
+                          </span>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-mono font-bold flex items-center gap-1 border shadow-2xs ${
-                            isReady
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
-                              : isOvertime
-                              ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-200 animate-pulse'
-                              : isWarning
-                              ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-200'
-                              : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-200'
-                          }`}
-                          title={`سەیارەکە بۆ ماوەی ${elapsedMins} خولەکە لە غەسلدا ماوەتەوە`}
-                        >
-                          <Clock className="w-3 h-3" />
-                          <span>{elapsedMins} خولەک</span>
-                          {isOvertime && <span>⚠️</span>}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleReleaseBayDirectly(car)}
-                          className="p-1 rounded-lg bg-slate-100 hover:bg-rose-100 dark:bg-slate-700 hover:dark:bg-rose-950 text-slate-500 hover:text-rose-600 transition cursor-pointer"
-                          title="لابردنی سەیارەکە لە غەسل"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <strong className="text-sm sm:text-base font-black font-mono text-emerald-600 dark:text-emerald-400">
+                        {record.isFree ? '0 IQD' : formatIQD(record.price)}
+                      </strong>
                     </div>
 
-                    {/* Plate Display or Carpet Badge */}
-                    <div className="flex justify-center py-1">
-                      {car.itemType === 'carpet' || car.carpetSpecs ? (
-                        <div className="px-3.5 py-1.5 bg-teal-50 dark:bg-teal-950/70 border border-teal-300 dark:border-teal-700/80 rounded-xl text-teal-900 dark:text-teal-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
-                          <span className="text-sm">🧶</span>
-                          <span>فەرش:</span>
-                          <span className="font-mono font-black text-teal-700 dark:text-teal-300">
-                            C-{car.plate.number}
-                          </span>
-                          <span className="text-[10px] text-teal-600 dark:text-teal-400 font-mono">
-                            ({car.carpetSpecs?.areaSquareMeters || 12} م²)
-                          </span>
+                    {/* Middle Row: Plate, Customer & Car Details */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="shrink-0">
+                          {vehicle.itemType === 'carpet' || record.itemType === 'carpet' ? (
+                            <div className="px-2.5 py-1 bg-teal-50 dark:bg-teal-950/70 border border-teal-300 dark:border-teal-700 rounded-lg text-teal-900 dark:text-teal-200 text-xs font-bold flex items-center gap-1">
+                              <span>🧶 فەرش:</span>
+                              <span className="font-mono font-black">{vehicle.plate.number}</span>
+                            </div>
+                          ) : (
+                            <PlateDisplay plate={vehicle.plate} size="sm" />
+                          )}
                         </div>
-                      ) : (
-                        <PlateDisplay plate={car.plate} size="sm" />
-                      )}
-                    </div>
 
-                    {/* Customer & Car Info */}
-                    <div className="text-center text-xs space-y-0.5 bg-slate-50 dark:bg-slate-700/40 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <p className="font-bold text-slate-800 dark:text-slate-200 truncate">
-                        {car.ownerName ? `کڕیار: ${car.ownerName}` : 'شۆردنی ئاسایی'}
-                        {car.color ? ` • ڕەنگ: ${car.color}` : ''}
-                      </p>
-                      {car.assignedWorkerName && (
-                        <p className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold truncate">
-                          وەستای بەرپرس: {car.assignedWorkerName}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Wash Stages */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs px-0.5">
-                        <span className="text-slate-500 dark:text-slate-400 font-bold text-[11px]">قۆناغ:</span>
-                        <span className="font-black text-amber-600 dark:text-amber-400 text-[11px]">
-                          {car.washStage || 'دەستپێکردن'}
-                        </span>
+                        <div className="space-y-0.5 text-xs">
+                          <p className="font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            <span>{vehicle.ownerName || 'کڕیاری بەڕێز'}</span>
+                            {vehicle.phone && (
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono font-medium" dir="ltr">
+                                {vehicle.phone}
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                            <span className="font-bold">{vehicle.carModel || 'سەیارە'}</span>
+                            {vehicle.color && <span>• {vehicle.color}</span>}
+                            <span>• {record.serviceName || 'شۆردنی ئاسایی'}</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                              {record.vehicleSize === 'suv' ? '🚙 جیپ' : record.vehicleSize === 'truck' ? '🚐 پیکاب' : '🚗 سالۆن'}
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-1 text-[10px]">
-                        {(
-                          [
-                            { id: 'کەفڕێژکردن', label: 'کەف 🧼' },
-                            { id: 'شۆردنی دەرەوە', label: 'ئاو 🚿' },
-                            { id: 'وشککردنەوە و پۆلیش', label: 'وشک 💨' },
-                            { id: 'تەواوبوو', label: 'تەواو ✨' },
-                          ] as const
-                        ).map((st) => (
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickPrintReceipt(vehicle, record)}
+                          className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          title="دووبارە چاپکردنەوەی پسوولە"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          <span>چاپکردنەوە</span>
+                        </button>
+
+                        {vehicle.phone && (
                           <button
-                            key={st.id}
                             type="button"
-                            onClick={() => handleStageChange(car.id, st.id as any)}
-                            className={`py-1 rounded-lg font-bold transition text-center cursor-pointer border ${
-                              car.washStage === st.id
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                                : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100'
-                            }`}
+                            onClick={() => {
+                              const msg = `سڵاو بەڕێز ${vehicle.ownerName}، زۆر سوپاس بۆ سەردانەکەت بۆ ${settings.carWashName || 'غەسلی ئێمە'} (${branchName}). شۆردنی سەیارەکەت (${vehicle.carModel}) بە سەرکەوتوویی تەواوبوو. ژمارەی سەردانەکانت: ${vehicle.totalWashes || 1}. بەخێربێیت هەمیشە!`;
+                              openWhatsAppChat(vehicle.phone, msg);
+                            }}
+                            className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            title="ناردنی پسوولە و سوپاسنامە لە ڕێگەی واتسئەپ"
                           >
-                            {st.label}
+                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="hidden sm:inline">واتسئەپ</span>
                           </button>
-                        ))}
-                      </div>
-
-                      {/* WhatsApp Notify */}
-                      {car.phone && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const msg = generateCarReadyMessage(car, settings, car.currentBay || 1);
-                            openWhatsAppChat(car.phone, msg);
-                          }}
-                          className={`w-full mt-1 py-1 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition cursor-pointer border ${
-                            isReady
-                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600 shadow-2xs'
-                              : 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800'
-                          }`}
-                        >
-                          <MessageCircle className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>{isReady ? '📲 WhatsApp: سەیارە ئامادەیە!' : '📲 ئاگاداری WhatsApp'}</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700/80 space-y-1.5">
-                      <div className="grid grid-cols-3 gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleQuickPrintReceipt(car)}
-                          className="py-1 px-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
-                          title="چاپکردنی پسوولە"
-                        >
-                          <Printer className="w-3 h-3" />
-                          <span>پسوولە</span>
-                        </button>
+                        )}
 
                         <button
                           type="button"
-                          onClick={() => setCafeModalVehicle(car)}
-                          className="py-1 px-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                          onClick={() => handleDeleteSale(vehicle.id, record.id)}
+                          className="p-1.5 bg-slate-50 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950 text-slate-400 hover:text-rose-600 border border-slate-200 dark:border-slate-700 hover:border-rose-300 rounded-xl transition cursor-pointer"
+                          title="سڕینەوەی ئەم فرۆشە ئەگەر بە هەڵە تۆمارکرابێت"
                         >
-                          <Coffee className="w-3 h-3 text-amber-600" />
-                          <span>کافێ</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setSubscriptionVehicle(car)}
-                          className="py-1 px-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <Crown className="w-3 h-3 text-amber-500" />
-                          <span>VIP</span>
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-
-                      {/* Primary Checkout Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleInitiateCheckout(car)}
-                        className={`w-full py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
-                          isReady
-                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 ring-2 ring-emerald-400 animate-pulse'
-                            : 'bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white shadow-emerald-600/20'
-                        }`}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>
-                          {isReady
-                            ? '✨ سەیارە تەواوبووە • وەرگرتن و دەرکردن'
-                            : 'تەواوکردن و وەرگرتنی پارە (پسوولە)'}
-                        </span>
-                      </button>
                     </div>
                   </div>
                 );
@@ -2625,89 +2845,6 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
         </div>
       )}
 
-      {/* Modal: Assign from Queue to Bay */}
-      {assignBayModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl text-slate-900 dark:text-white">
-            <h3 className="font-black text-sm text-slate-900 dark:text-white">
-              خستنەسەری سەیارە بۆ ناو هۆڵی {assignBayModal}
-            </h3>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="text-slate-600 dark:text-slate-400 block mb-1 font-bold">سەیارە لە نۆبە:</label>
-                <select
-                  value={assignVehicleId}
-                  onChange={(e) => setAssignVehicleId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none"
-                >
-                  {queueVehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.carModel} (
-                      {v.plate.type === 'unified'
-                        ? `${v.plate.provinceCode} | ${v.plate.letter} ${v.plate.number}`
-                        : `${v.plate.oldCityName} ${v.plate.oldNumber}`}
-                      )
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-slate-600 dark:text-slate-400 block mb-1 font-bold">وەستای بەرپرس:</label>
-                <select
-                  value={assignWorkerId}
-                  onChange={(e) => setAssignWorkerId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none"
-                >
-                  {staff.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const worker = staff.find((s) => s.id === assignWorkerId) || staff[0];
-                    const nowISO = new Date().toISOString();
-                    const updated = vehicles.map((v) => {
-                      if (v.id === assignVehicleId) {
-                        return {
-                          ...v,
-                          currentBay: assignBayModal,
-                          bayEntryTime: nowISO,
-                          washStage: 'کەفڕێژکردن' as const,
-                          assignedWorkerId: worker?.id,
-                          assignedWorkerName: worker?.name,
-                        };
-                      }
-                      return v;
-                    });
-                    onUpdateVehicles(updated);
-                    setAssignBayModal(null);
-                    if (soundEnabled) playPosSound('beep');
-                    onNotify(`سەیارەکە خرایە ناو هۆڵی ${assignBayModal}.`);
-                  }}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-md shadow-blue-500/20"
-                >
-                  دەستپێکردن
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAssignBayModal(null)}
-                  className="px-3 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl"
-                >
-                  داخستن
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Printed Receipt Modal */}
       {printedReceiptData && (
@@ -2721,7 +2858,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           cafeItems={printedReceiptData.cafeItems}
           cafeTotal={printedReceiptData.cafeTotal}
           damageInspection={printedReceiptData.damageInspection}
-          settings={settings}
+          settings={effectiveReceiptSettings}
           chargedPrice={printedReceiptData.chargedPrice}
           vehicleSize={printedReceiptData.vehicleSize}
           paymentMethod={printedReceiptData.paymentMethod}

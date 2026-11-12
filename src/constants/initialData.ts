@@ -7,6 +7,7 @@ import {
   AppSettings,
   RoadmapItem,
   InventoryItem,
+  MaterialPurchase,
   CafeItem,
   ParkingRecord,
   Branch,
@@ -104,6 +105,11 @@ export const defaultSettings: AppSettings = {
   garageDailyRate: 1000,
   garageOvernightRate: 3000,
   garageMonthlyRate: 25000,
+
+  // Multi-Branch (فرە لقی: لقی ١ و لقی ٢)
+  branches: defaultBranches,
+  activeBranchId: 'branch-1',
+  autoSyncIntervalMs: 1500, // پشکنینی خێرای ڕاستەوخۆ هەر ١.٥ چرکە جارێک
 };
 
 export const defaultInventoryItems: InventoryItem[] = [
@@ -161,6 +167,57 @@ export const defaultInventoryItems: InventoryItem[] = [
     costPerUnit: 5000,
     lastRestocked: '2026-11-01',
     notes: 'دەسماڵی ئەستووری وشککردنەوە بێ دروستکردنی شوخت',
+  },
+];
+
+export const defaultMaterialPurchases: MaterialPurchase[] = [
+  {
+    id: 'mp-1',
+    name: 'Koch-Chemie Protector Wax (Pw) 1L',
+    category: 'واکس و پۆڵیش',
+    quantity: 6,
+    unit: 'بتڵ',
+    costPerUnit: 28000,
+    totalCost: 168000,
+    date: getDaysAgoDateStr(0),
+    supplier: 'فرۆشگای کاروان',
+    notes: 'واکسی پارێزەر و هایدرۆفۆبیکی ئەڵمانی بۆ VIP',
+  },
+  {
+    id: 'mp-2',
+    name: 'Koch-Chemie Green Star (Gs) 1L',
+    category: 'شامپۆ و کەف',
+    quantity: 10,
+    unit: 'بتڵ',
+    costPerUnit: 20000,
+    totalCost: 200000,
+    date: getDaysAgoDateStr(2),
+    supplier: 'کۆمپانیای دیتایلینگ',
+    notes: 'پاککەرەوەی گشتی بۆ چەوری و ناوەوە',
+  },
+  {
+    id: 'mp-3',
+    name: 'شامپۆی کەفی چڕ (Active Snow Foam)',
+    category: 'شامپۆ و کەف',
+    quantity: 2,
+    unit: 'گالۆن',
+    costPerUnit: 40000,
+    totalCost: 80000,
+    date: getDaysAgoDateStr(4),
+    supplier: 'کۆگای سلێمانی',
+    notes: 'شامپۆی کەفڕێژی سەرەکی غەسل',
+  },
+  {
+    id: 'mp-4',
+    name: 'خاولی مایکڕۆفایبەری وشککردنەوە',
+    category: 'پێداویستی تر',
+    quantity: 20,
+    unit: 'دانە',
+    costPerUnit: 5000,
+    totalCost: 100000,
+    date: getDaysAgoDateStr(6),
+    supplier: 'فرۆشگای هەولێر',
+    notes: 'خاولی تایبەتی وشککردنەوە بێ دروستکردنی شوخت',
   },
 ];
 

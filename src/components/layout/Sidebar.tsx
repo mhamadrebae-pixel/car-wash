@@ -36,7 +36,7 @@ import {
   PackageCheck,
   Warehouse,
 } from 'lucide-react';
-import { AuthUser } from '@/types';
+import { AuthUser, Branch } from '@/types';
 
 export type TabKey =
   | 'analytics'
@@ -86,6 +86,9 @@ interface SidebarProps {
   onLogout?: () => void;
   currentTheme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  branches?: Branch[];
+  activeBranchId?: string;
+  onSwitchBranch?: (branchId: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -109,6 +112,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   currentTheme = 'light',
   onToggleTheme,
+  branches = [],
+  activeBranchId,
+  onSwitchBranch,
 }) => {
   // Collapsible state (Matching Collapsible Sidebar UI Upgrade)
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
@@ -367,6 +373,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
         </div>
+
+        {/* Active Branch Selector in Sidebar */}
+        {!isCollapsed && branches && branches.length > 0 && (
+          <div className="px-3 py-2 bg-indigo-50/70 dark:bg-indigo-950/40 border-b border-indigo-100/60 dark:border-indigo-900/40 flex items-center justify-between gap-1 text-[11px]">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="font-bold text-indigo-950 dark:text-indigo-200 truncate text-[11px]">
+                {branches.find((b) => b.id === activeBranchId)?.name || 'لقی سەرەکی'}
+              </span>
+            </div>
+            {onSwitchBranch && (
+              <select
+                value={activeBranchId || 'branch-1'}
+                onChange={(e) => onSwitchBranch(e.target.value)}
+                className="bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold text-indigo-900 dark:text-indigo-200 rounded-lg px-1.5 py-0.5 outline-none cursor-pointer"
+                title="گۆڕینی لق"
+              >
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                    {b.code || b.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
 
         {/* 2. NAVIGATION BODY */}
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto scrollbar-none">

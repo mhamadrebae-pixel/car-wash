@@ -8,6 +8,7 @@ import {
   LicensePlate,
   RoadmapItem,
   InventoryItem,
+  MaterialPurchase,
   DailyZReport,
   AuthUser,
   AuthSession,
@@ -15,6 +16,7 @@ import {
   WashRecord,
   CafeItem,
   ParkingRecord,
+  Branch,
 } from '@/types';
 import {
   defaultSetupItems,
@@ -25,7 +27,9 @@ import {
   defaultSettings,
   defaultRoadmapItems,
   defaultInventoryItems,
+  defaultMaterialPurchases,
   defaultParkingRecords,
+  defaultBranches,
 } from '@/constants/initialData';
 
 export const KEYS = {
@@ -37,11 +41,31 @@ export const KEYS = {
   SETTINGS: 'carwash_v1_settings',
   ROADMAP: 'carwash_v1_roadmap',
   INVENTORY: 'carwash_v1_inventory',
+  MATERIAL_PURCHASES: 'carwash_v1_material_purchases',
   CAFE_ITEMS: 'carwash_v1_cafe_items',
   ZREPORTS: 'carwash_v1_zreports',
   AUTH_SESSION: 'carwash_v1_auth_session',
   PARKING: 'carwash_v1_parking',
+  BRANCHES: 'carwash_v1_branches',
+  ACTIVE_BRANCH: 'carwash_v1_active_branch',
+  LAST_SYNC_TS: 'carwash_v1_last_sync_ts',
 };
+
+// Cross-tab instantaneous Realtime BroadcastChannel
+const realtimeChannel =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel('carwash_realtime_sync')
+    : null;
+
+export function broadcastLocalChange(keyName?: string): void {
+  try {
+    realtimeChannel?.postMessage({
+      type: 'LOCAL_DATA_MUTATED',
+      key: keyName || 'general',
+      timestamp: Date.now(),
+    });
+  } catch {}
+}
 
 // Safe storage helper with quota guard
 export function safeStorageSet(key: string, value: string): void {
@@ -383,6 +407,28 @@ export function saveInventory(items: InventoryItem[]): void {
   }
 }
 
+export function getSavedMaterialPurchases(): MaterialPurchase[] {
+  if (typeof window === 'undefined') return defaultMaterialPurchases;
+  const d = localStorage.getItem(KEYS.MATERIAL_PURCHASES);
+  if (d === null) {
+    localStorage.setItem(KEYS.MATERIAL_PURCHASES, JSON.stringify(defaultMaterialPurchases));
+    return defaultMaterialPurchases;
+  }
+  try {
+    const parsed = JSON.parse(d);
+    return Array.isArray(parsed) ? parsed : defaultMaterialPurchases;
+  } catch {
+    return defaultMaterialPurchases;
+  }
+}
+
+export function saveMaterialPurchases(items: MaterialPurchase[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(KEYS.MATERIAL_PURCHASES, JSON.stringify(items));
+    triggerServerSync();
+  }
+}
+
 export const defaultCafeItems: CafeItem[] = [
   { id: 'c-1', name: 'چای کوردی خەست', price: 1000, category: 'خواردنەوەی گەرم' },
   { id: 'c-2', name: 'قاوەی ئیسپرێسۆ', price: 2000, category: 'خواردنەوەی گەرم' },
@@ -426,7 +472,14 @@ export function getSavedSettings(): AppSettings {
   }
   try {
     const parsed = JSON.parse(d);
-    return { ...defaultSettings, ...parsed };
+    const merged: AppSettings = { ...defaultSettings, ...parsed };
+    if (!merged.branches || merged.branches.length === 0) {
+      merged.branches = defaultBranches;
+    }
+    if (!merged.activeBranchId) {
+      merged.activeBranchId = 'branch-1';
+    }
+    return merged;
   } catch {
     return defaultSettings;
   }
@@ -435,7 +488,41 @@ export function getSavedSettings(): AppSettings {
 export function saveSettings(settings: AppSettings): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+    broadcastLocalChange(KEYS.SETTINGS);
     triggerServerSync();
+  }
+}
+
+export function getSavedBranches(): Branch[] {
+  const settings = getSavedSettings();
+  return settings.branches && settings.branches.length > 0 ? settings.branches : defaultBranches;
+}
+
+export function saveBranches(branches: Branch[]): void {
+  const settings = getSavedSettings();
+  const updatedSettings = { ...settings, branches };
+  saveSettings(updatedSettings);
+}
+
+export function getActiveBranchId(): string {
+  if (typeof window === 'undefined') return 'branch-1';
+  try {
+    const direct = localStorage.getItem(KEYS.ACTIVE_BRANCH);
+    if (direct) return direct;
+  } catch {}
+  const settings = getSavedSettings();
+  return settings.activeBranchId || 'branch-1';
+}
+
+export function saveActiveBranchId(branchId: string): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(KEYS.ACTIVE_BRANCH, branchId);
+    } catch {}
+    const settings = getSavedSettings();
+    const updatedSettings = { ...settings, activeBranchId: branchId };
+    saveSettings(updatedSettings);
+    broadcastLocalChange(KEYS.ACTIVE_BRANCH);
   }
 }
 
@@ -944,10 +1031,14 @@ export function applyTheme(theme: ThemeMode): void {
 
 let syncDebounceTimer: any = null;
 
-export function triggerServerSync(): void {
+export function triggerServerSync(immediate = false): void {
   if (typeof window === 'undefined') return;
+  // Immediately inform other tabs on the same device
+  broadcastLocalChange();
+
   if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
-  syncDebounceTimer = setTimeout(async () => {
+
+  const doSync = async () => {
     try {
       const payload = {
         vehicles: getSavedVehicles(),
@@ -957,12 +1048,13 @@ export function triggerServerSync(): void {
         services: getSavedServices(),
         settings: getSavedSettings(),
         inventory: getSavedInventory(),
+        materialPurchases: getSavedMaterialPurchases(),
         roadmap: getSavedRoadmap(),
         cafeItems: getSavedCafeItems(),
         zreports: getSavedZReports(),
         parkingRecords: getSavedParkingRecords(),
       };
-      await fetch('/api/sync', {
+      const res = await fetch('/api/sync', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -970,16 +1062,33 @@ export function triggerServerSync(): void {
         },
         body: JSON.stringify(payload),
       });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data && json.data.lastUpdated) {
+          localStorage.setItem(KEYS.LAST_SYNC_TS, json.data.lastUpdated);
+        }
+      }
     } catch {
       // Offline fallback: localStorage holds state safely
     }
-  }, 400);
+  };
+
+  if (immediate) {
+    doSync();
+  } else {
+    // Ultra-fast 120ms debounce for rapid auto-saving without server bottleneck
+    syncDebounceTimer = setTimeout(doSync, 120);
+  }
+}
+
+export function forceImmediateSync(): void {
+  triggerServerSync(true);
 }
 
 // Auto-sync when internet connection is restored
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    triggerServerSync();
+    triggerServerSync(true);
   });
 }
 
@@ -1015,6 +1124,9 @@ export async function pullServerDatabase(): Promise<boolean> {
       if (Array.isArray(data.inventory)) {
         safeStorageSet(KEYS.INVENTORY, JSON.stringify(data.inventory));
       }
+      if (Array.isArray(data.materialPurchases)) {
+        safeStorageSet(KEYS.MATERIAL_PURCHASES, JSON.stringify(data.materialPurchases));
+      }
       if (Array.isArray(data.roadmap)) {
         safeStorageSet(KEYS.ROADMAP, JSON.stringify(data.roadmap));
       }
@@ -1027,12 +1139,50 @@ export async function pullServerDatabase(): Promise<boolean> {
       if (Array.isArray(data.parkingRecords)) {
         safeStorageSet(KEYS.PARKING, JSON.stringify(data.parkingRecords));
       }
+      if (data.lastUpdated) {
+        localStorage.setItem(KEYS.LAST_SYNC_TS, data.lastUpdated);
+      }
       return true;
     }
   } catch {
     // Offline or fetch failed
   }
   return false;
+}
+
+// Lightweight heartbeat to check if other devices or users made updates
+export async function checkServerUpdates(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const res = await fetch('/api/sync?checkOnly=1', { cache: 'no-store' });
+    if (!res.ok) return false;
+    const json = await res.json();
+    if (json.success && json.lastUpdated) {
+      const localTs = localStorage.getItem(KEYS.LAST_SYNC_TS) || '';
+      if (json.lastUpdated !== localTs) {
+        return await pullServerDatabase();
+      }
+    }
+  } catch {}
+  return false;
+}
+
+export function getLastSyncTimestamp(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(KEYS.LAST_SYNC_TS) || '';
+}
+
+export function subscribeToRealtimeSync(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const handler = () => {
+    listener();
+  };
+  realtimeChannel?.addEventListener('message', handler);
+  window.addEventListener('storage', handler);
+  return () => {
+    realtimeChannel?.removeEventListener('message', handler);
+    window.removeEventListener('storage', handler);
+  };
 }
 
 export async function fetchVehicleFromServer(id: string): Promise<{ vehicle: Vehicle; settings?: AppSettings; services?: ServiceItem[] } | null> {

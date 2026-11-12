@@ -284,6 +284,20 @@ export interface InventoryItem {
   notes?: string;
 }
 
+export interface MaterialPurchase {
+  id: string;
+  name: string;
+  category: 'شامپۆ و کەف' | 'واکس و پۆڵیش' | 'نانۆ و پارێزەر' | 'ڕۆن و هایدرۆلیک' | 'پێداویستی تر';
+  quantity: number;
+  unit: string;
+  costPerUnit: number; // IQD
+  totalCost: number; // IQD
+  date: string; // YYYY-MM-DD
+  supplier?: string;
+  notes?: string;
+  expenseId?: string;
+}
+
 export interface AppSettings {
   // 1. Identity & Branding
   themeMode?: 'light' | 'dark';

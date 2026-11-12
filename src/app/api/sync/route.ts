@@ -8,7 +8,18 @@ const SYNC_SECRET = 'carwash-local-sync-v1';
 
 export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
     const data = await readServerDatabase();
+
+    // Fast lightweight heartbeat check for multi-device sync (<2ms response)
+    if (url.searchParams.get('checkOnly') === '1') {
+      return NextResponse.json({
+        success: true,
+        lastUpdated: data.lastUpdated || '',
+        version: data.version || '',
+      });
+    }
+
     const authHeader = request.headers.get('x-carwash-sync-key');
     const isAuthorized = authHeader === SYNC_SECRET;
 

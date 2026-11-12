@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { SetupItem, Expense, Vehicle, StaffMember, ServiceItem, WashRecord, AppSettings } from '@/types';
+import { SetupItem, Expense, Vehicle, StaffMember, ServiceItem, WashRecord, AppSettings, Branch } from '@/types';
 import { TabKey, AnalyticsSectionKey } from '@/components/layout/Sidebar';
 import { formatIQD, seedRealisticDemoData, normalizeDigits, isDateToday } from '@/lib/storage';
 import { openWhatsAppChat, generateInactivityReminderMessage } from '@/lib/whatsapp';
@@ -70,6 +70,8 @@ interface AnalyticsDashboardProps {
   staff: StaffMember[];
   services: ServiceItem[];
   settings?: AppSettings;
+  branches?: Branch[];
+  activeBranchId?: string;
   activeSection?: AnalyticsSectionKey;
   onSectionChange?: (section: AnalyticsSectionKey) => void;
   onNavigateTab?: (tab: TabKey, subSection?: any) => void;
@@ -84,6 +86,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   staff,
   services,
   settings,
+  branches = [],
+  activeBranchId,
   activeSection: propActiveSection,
   onSectionChange,
   onNavigateTab,
@@ -91,6 +95,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   onNotify,
 }) => {
   const [internalSection, setInternalSection] = useState<AnalyticsSectionKey>('overview');
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState<'all' | string>('all');
   const activeSection = propActiveSection || internalSection;
   const setActiveSection = (s: AnalyticsSectionKey) => {
     if (onSectionChange) onSectionChange(s);
@@ -149,9 +154,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return sum + cost * qty;
   }, 0);
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const branchFilteredExpenses = useMemo(() => {
+    if (selectedBranchFilter === 'all') return expenses;
+    return expenses.filter((e) => (e.branchId || 'branch-1') === selectedBranchFilter);
+  }, [expenses, selectedBranchFilter]);
 
-  // Flatten all wash records with vehicle context
+  const totalExpenses = branchFilteredExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+  // Flatten all wash records with vehicle context (scoped to selected branch)
   const allWashRecords: (WashRecord & {
     carModel?: string;
     ownerName?: string;
@@ -165,6 +175,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   vehicles.forEach((v) => {
     (v.washHistory || []).forEach((w) => {
+      if (selectedBranchFilter !== 'all') {
+        const wBranch = w.branchId || v.branchId || 'branch-1';
+        if (wBranch !== selectedBranchFilter) return;
+      }
+
       const price = Number(w.price) || 0;
       totalWashRevenue += price;
       totalWashesCount++;
@@ -745,8 +760,39 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </div>
           </div>
 
-          {/* Controls: Time Period Filter Pills + Demo Data Button */}
+          {/* Controls: Branch Filter + Time Period Filter Pills + Demo Data Button */}
           <div className="flex items-center gap-2 flex-wrap self-start lg:self-center">
+            {/* Multi-Branch Selector Pills */}
+            {branches && branches.length > 0 && (
+              <div className="flex items-center gap-1 bg-indigo-50/70 dark:bg-indigo-950/50 p-1.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBranchFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    selectedBranchFilter === 'all'
+                      ? 'bg-indigo-600 text-white shadow-sm font-black'
+                      : 'text-indigo-900 dark:text-indigo-300 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/60'
+                  }`}
+                >
+                  🏢 هەموو لقەکان
+                </button>
+                {branches.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => setSelectedBranchFilter(b.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      selectedBranchFilter === b.id
+                        ? 'bg-indigo-600 text-white shadow-sm font-black'
+                        : 'text-indigo-900 dark:text-indigo-300 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/60'
+                    }`}
+                  >
+                    🏢 {b.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Time Period Filter Pills (Stripe Style) */}
             <div className="flex items-center gap-1.5 bg-[#F1F3F7] dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-700 shadow-xs">
               {[

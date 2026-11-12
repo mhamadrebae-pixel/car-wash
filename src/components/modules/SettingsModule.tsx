@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { AppSettings, ServiceItem, VehicleSize } from '@/types';
+import { AppSettings, ServiceItem, VehicleSize, Branch } from '@/types';
 import {
   getSavedSetupItems,
   saveSetupItems,
@@ -71,6 +71,8 @@ import {
 interface SettingsModuleProps {
   settings: AppSettings;
   services?: ServiceItem[];
+  branches?: Branch[];
+  onUpdateBranches?: (branches: Branch[]) => void;
   onUpdateSettings: (settings: AppSettings) => void;
   onUpdateServices?: (services: ServiceItem[]) => void;
   onNotify: (msg: string) => void;
@@ -83,6 +85,8 @@ interface SettingsModuleProps {
 export const SettingsModule: React.FC<SettingsModuleProps> = ({
   settings,
   services = [],
+  branches = [],
+  onUpdateBranches,
   onUpdateSettings,
   onUpdateServices,
   onNotify,
@@ -95,8 +99,17 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
 
   // Active Tab in Settings
   const [activeTab, setActiveTab] = useState<
-    'identity' | 'receipt' | 'bays' | 'rent_costs' | 'pricing' | 'loyalty' | 'backup' | 'appearance'
+    'identity' | 'receipt' | 'bays' | 'rent_costs' | 'pricing' | 'loyalty' | 'backup' | 'appearance' | 'branches'
   >('identity');
+
+  // Branch management local state
+  const [localBranches, setLocalBranches] = useState<Branch[]>(branches);
+  const [newBranchName, setNewBranchName] = useState('');
+  const [newBranchCode, setNewBranchCode] = useState('');
+  const [newBranchAddress, setNewBranchAddress] = useState('');
+  const [newBranchPhone, setNewBranchPhone] = useState('');
+  const [newBranchBays, setNewBranchBays] = useState(2);
+  const [isAddingBranch, setIsAddingBranch] = useState(false);
 
   // Service Management State
   const [isAddingService, setIsAddingService] = useState(false);
@@ -492,6 +505,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
           { id: 'loyalty', label: '٦. لۆیەڵتی، PIN و ئاسایش', icon: Shield, color: 'text-purple-600' },
           { id: 'backup', label: '٧. باکئەپ و هەناردەی Excel', icon: Database, color: 'text-rose-600' },
           { id: 'appearance', label: '٨. شێوازی دەرکەوتن (Theme)', icon: Palette, color: 'text-amber-500' },
+          { id: 'branches', label: '٩. بەڕێوەبردنی لقەکان (لقی ١ و ٢)', icon: Building2, color: 'text-indigo-600' },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -1873,6 +1887,299 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({
             <span>
               <strong>تێبینی:</strong> دەتوانیت لە هەر شوێنێک بیت بە کلیک لەسەر دوگمەی خۆر/مانگ (☀️/🌙) لە سەرەوەی شاشەکە ڕاستەوخۆ دۆخەکە بگۆڕیت بێ ئەوەی پێویست بکات بێیتە ناو ئەم ڕێکخستنە.
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 9. BRANCHES MANAGEMENT (بەڕێوەبردنی لقەکان: لقی ١ و لقی ٢)      */}
+      {/* ============================================================== */}
+      {activeTab === 'branches' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 space-y-6 shadow-xs text-xs text-slate-900 dark:text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-200 dark:border-indigo-800 shrink-0">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  سیستەمی فرە لقی (Multi-Branch Management)
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  بەڕێوەبردنی لقەکانی غەسلی دەریا لە شارەکەدا بە داتای یەکگرتوو و پسوولەی جیاواز
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsAddingBranch(!isAddingBranch)}
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isAddingBranch ? 'داخستنی فۆڕم' : 'زیادکردنی لقێکی نوێ'}</span>
+            </button>
+          </div>
+
+          {/* New Branch Form */}
+          {isAddingBranch && (
+            <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-2xl border-2 border-dashed border-indigo-200 dark:border-indigo-800/80 space-y-3 animate-fade-in">
+              <h4 className="font-black text-xs text-indigo-950 dark:text-indigo-200 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-indigo-600" />
+                <span>تۆمارکردنی لقی نوێ بۆ شوشتنگە</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">ناوی لق:</label>
+                  <input
+                    type="text"
+                    placeholder="نموونە: لقی ٣ (ڕاپەڕین)"
+                    value={newBranchName}
+                    onChange={(e) => setNewBranchName(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">کۆدی کورت:</label>
+                  <input
+                    type="text"
+                    placeholder="نموونە: B3"
+                    value={newBranchCode}
+                    onChange={(e) => setNewBranchCode(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono font-bold text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">ژمارەی هۆڵەکان:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="6"
+                    value={newBranchBays}
+                    onChange={(e) => setNewBranchBays(Math.max(1, Math.min(6, Number(e.target.value) || 2)))}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono font-bold text-xs text-center"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">ژمارەی مۆبایل:</label>
+                  <input
+                    type="text"
+                    placeholder="0770xxxxxxx"
+                    value={newBranchPhone}
+                    onChange={(e) => setNewBranchPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono text-xs text-left"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">ناونیشانی لق:</label>
+                <input
+                  type="text"
+                  placeholder="سلێمانی - ..."
+                  value={newBranchAddress}
+                  onChange={(e) => setNewBranchAddress(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-medium text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingBranch(false)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold"
+                >
+                  پاشگەزبوونەوە
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newBranchName.trim()) {
+                      onNotify('تکایە ناوی لق بنووسە.');
+                      return;
+                    }
+                    const newBranch: Branch = {
+                      id: `branch-${Date.now()}`,
+                      name: newBranchName.trim(),
+                      code: newBranchCode.trim() || `B${localBranches.length + 1}`,
+                      address: newBranchAddress.trim() || settings.carWashAddress,
+                      phone: newBranchPhone.trim() || settings.carWashPhone,
+                      numberOfBays: newBranchBays,
+                      isMain: false,
+                    };
+                    const updated = [...localBranches, newBranch];
+                    setLocalBranches(updated);
+                    if (onUpdateBranches) onUpdateBranches(updated);
+                    setIsAddingBranch(false);
+                    setNewBranchName('');
+                    setNewBranchCode('');
+                    setNewBranchAddress('');
+                    setNewBranchPhone('');
+                    onNotify(`🎉 لقی «${newBranch.name}» بە سەرکەوتوویی زیادکرا!`);
+                  }}
+                  className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                >
+                  تۆمارکردنی لق
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Current Branches List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {localBranches.map((branch, index) => (
+              <div
+                key={branch.id}
+                className={`p-4 rounded-2xl border-2 transition-all space-y-3 ${
+                  branch.isMain
+                    ? 'bg-indigo-50/30 dark:bg-indigo-950/20 border-indigo-300 dark:border-indigo-800'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-mono font-bold flex items-center justify-center text-xs">
+                      {branch.code || `B${index + 1}`}
+                    </span>
+                    <strong className="text-sm font-black text-slate-900 dark:text-white">
+                      {branch.name}
+                    </strong>
+                    {branch.isMain && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-300">
+                        لقی سەرەکی
+                      </span>
+                    )}
+                  </div>
+
+                  {localBranches.length > 1 && !branch.isMain && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = localBranches.filter((b) => b.id !== branch.id);
+                        setLocalBranches(updated);
+                        if (onUpdateBranches) onUpdateBranches(updated);
+                        onNotify(`لقی «${branch.name}» لادرا.`);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 transition"
+                      title="سڕینەوەی ئەم لقە"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">ناوی لق:</label>
+                    <input
+                      type="text"
+                      value={branch.name}
+                      onChange={(e) => {
+                        const updated = localBranches.map((b) =>
+                          b.id === branch.id ? { ...b, name: e.target.value } : b
+                        );
+                        setLocalBranches(updated);
+                      }}
+                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">هۆڵەکانی شۆردن:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="6"
+                      value={branch.numberOfBays}
+                      onChange={(e) => {
+                        const val = Math.max(1, Math.min(6, Number(e.target.value) || 2));
+                        const updated = localBranches.map((b) =>
+                          b.id === branch.id ? { ...b, numberOfBays: val } : b
+                        );
+                        setLocalBranches(updated);
+                      }}
+                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 font-bold font-mono text-center"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">مۆبایلی لق:</label>
+                    <input
+                      type="text"
+                      value={branch.phone}
+                      onChange={(e) => {
+                        const updated = localBranches.map((b) =>
+                          b.id === branch.id ? { ...b, phone: e.target.value } : b
+                        );
+                        setLocalBranches(updated);
+                      }}
+                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 font-mono text-left"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">وەستای بەرپرس:</label>
+                    <input
+                      type="text"
+                      placeholder="ناوی وەستا..."
+                      value={branch.managerName || ''}
+                      onChange={(e) => {
+                        const updated = localBranches.map((b) =>
+                          b.id === branch.id ? { ...b, managerName: e.target.value } : b
+                        );
+                        setLocalBranches(updated);
+                      }}
+                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 block font-bold">ناونیشانی پسوولەی چاپکراو:</label>
+                  <input
+                    type="text"
+                    value={branch.address}
+                    onChange={(e) => {
+                      const updated = localBranches.map((b) =>
+                        b.id === branch.id ? { ...b, address: e.target.value } : b
+                      );
+                      setLocalBranches(updated);
+                    }}
+                    className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 font-medium"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  {!branch.isMain && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = localBranches.map((b) => ({
+                          ...b,
+                          isMain: b.id === branch.id,
+                        }));
+                        setLocalBranches(updated);
+                        if (onUpdateBranches) onUpdateBranches(updated);
+                        onNotify(`«${branch.name}» وەک لقی سەرەکی دیاریکرا.`);
+                      }}
+                      className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold"
+                    >
+                      دیاریکردن وەک لقی سەرەکی
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onUpdateBranches) onUpdateBranches(localBranches);
+                      onNotify(`گۆڕانکارییەکانی «${branch.name}» پاشەکەوت کران.`);
+                    }}
+                    className="mr-auto px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold"
+                  >
+                    پاشەکەوتکردن
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

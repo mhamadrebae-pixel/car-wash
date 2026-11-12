@@ -595,5 +595,43 @@
     }
   ],
   "lastUpdated": "2026-11-12T12:20:27.460Z",
-  "version": "2026-11-09-v1"
+  "version": "2026-11-09-v1",
+  "materialPurchases": [
+    {
+      "id": "mp-1",
+      "name": "Koch-Chemie Protector Wax (Pw) 1L",
+      "category": "واکس و پۆڵیش",
+      "quantity": 6,
+      "unit": "بتڵ",
+      "costPerUnit": 28000,
+      "totalCost": 168000,
+      "date": "2026-11-12",
+      "supplier": "فرۆشگای کاروان",
+      "notes": "واکسی پارێزەر و هایدرۆفۆبیکی ئەڵمانی بۆ VIP"
+    },
+    {
+      "id": "mp-2",
+      "name": "Koch-Chemie Green Star (Gs) 1L",
+      "category": "شامپۆ و کەف",
+      "quantity": 10,
+      "unit": "بتڵ",
+      "costPerUnit": 20000,
+      "totalCost": 200000,
+      "date": "2026-11-12",
+      "supplier": "کۆمپانیای بازرگانی دیتایلینگ",
+      "notes": "پاککەرەوەی گشتی ئەڵمانی بۆ چەوری و ناوەوە"
+    },
+    {
+      "id": "mp-3",
+      "name": "مەوادی پۆڵیش (3M Fast Cut Plus Extreme)",
+      "category": "واکس و پۆڵیش",
+      "quantity": 4,
+      "unit": "بتڵ",
+      "costPerUnit": 35000,
+      "totalCost": 140000,
+      "date": "2026-11-12",
+      "supplier": "سەنتەری 3M",
+      "notes": "بۆ پاککردنەوەی شوختی بۆیە و نەهێشتنی پەڵە"
+    }
+  ]
 }

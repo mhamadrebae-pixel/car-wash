@@ -23,11 +23,19 @@ import {
   ThemeMode,
   getSavedInventory,
   saveInventory,
+  getSavedMaterialPurchases,
+  saveMaterialPurchases,
   getSavedParkingRecords,
   saveParkingRecords,
+  getSavedBranches,
+  saveBranches,
+  getActiveBranchId,
+  saveActiveBranchId,
+  checkServerUpdates,
+  subscribeToRealtimeSync,
   KEYS,
 } from '@/lib/storage';
-import { SetupItem, Expense, ServiceItem, Vehicle, StaffMember, AppSettings, AuthUser, InventoryItem, ParkingRecord } from '@/types';
+import { SetupItem, Expense, ServiceItem, Vehicle, StaffMember, AppSettings, AuthUser, InventoryItem, MaterialPurchase, ParkingRecord, Branch } from '@/types';
 import { Sidebar, TabKey, AnalyticsSectionKey, VehicleSectionKey } from '@/components/layout/Sidebar';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { MobileAppDock } from '@/components/layout/MobileAppDock';
@@ -56,8 +64,12 @@ export default function MainPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [materialPurchases, setMaterialPurchases] = useState<MaterialPurchase[]>([]);
   const [parkingRecords, setParkingRecords] = useState<ParkingRecord[]>([]);
   const [settings, setSettings] = useState<AppSettings>(getSavedSettings());
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [activeBranchId, setActiveBranchId] = useState<string>('branch-1');
+  const [isLiveSyncing, setIsLiveSyncing] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>('light');
 
@@ -97,8 +109,24 @@ export default function MainPage() {
     setVehicles(getSavedVehicles());
     setStaff(getSavedStaff());
     setInventory(getSavedInventory());
+    setMaterialPurchases(getSavedMaterialPurchases());
     setParkingRecords(getSavedParkingRecords());
     setSettings(getSavedSettings());
+    setBranches(getSavedBranches());
+    setActiveBranchId(getActiveBranchId());
+  };
+
+  const handleSwitchBranch = (newBranchId: string) => {
+    setActiveBranchId(newBranchId);
+    saveActiveBranchId(newBranchId);
+    const bName = (branches || []).find((b) => b.id === newBranchId)?.name || newBranchId;
+    showNotification(`🏢 لقەکە گۆڕدرا بۆ: ${bName}`);
+  };
+
+  const handleUpdateBranches = (updatedBranches: Branch[]) => {
+    setBranches(updatedBranches);
+    saveBranches(updatedBranches);
+    showNotification('زانیاری لقەکان بە سەرکەوتوویی نوێکرایەوە.');
   };
 
   useEffect(() => {
@@ -121,13 +149,32 @@ export default function MainPage() {
     }
     setIsLoadingSession(false);
 
-    // Cross-tab real-time sync via storage events
-    const handleStorageChange = (e: StorageEvent) => {
-      if (!e.key || Object.values(KEYS).includes(e.key)) {
-        reloadAllData();
-      }
+    // 1. Instant local BroadcastChannel & storage events (same device / multi-tab)
+    const unsubscribeBroadcast = subscribeToRealtimeSync(() => {
+      reloadAllData();
+    });
+
+    // 2. High-speed Multi-Device background polling heartbeat
+    const pollInterval = settings?.autoSyncIntervalMs || 1500;
+    const pollTimer = setInterval(async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      try {
+        const hasNew = await checkServerUpdates();
+        if (hasNew) {
+          reloadAllData();
+        }
+      } catch {}
+    }, pollInterval);
+
+    // 3. Instant sync on focus / tab return
+    const handleWindowFocus = async () => {
+      try {
+        const hasNew = await checkServerUpdates();
+        if (hasNew) reloadAllData();
+      } catch {}
     };
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleWindowFocus);
 
     // Online & Offline notification handlers
     const handleOnline = () => {
@@ -143,11 +190,14 @@ export default function MainPage() {
     window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      unsubscribeBroadcast();
+      clearInterval(pollTimer);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleWindowFocus);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [settings?.autoSyncIntervalMs]);
 
   // Enforce role-based access for cashier
   useEffect(() => {
@@ -176,6 +226,11 @@ export default function MainPage() {
   const handleUpdateInventory = (items: InventoryItem[]) => {
     setInventory(items);
     saveInventory(items);
+  };
+
+  const handleUpdateMaterialPurchases = (items: MaterialPurchase[]) => {
+    setMaterialPurchases(items);
+    saveMaterialPurchases(items);
   };
 
   const handleUpdateVehicles = (items: Vehicle[]) => {
@@ -284,6 +339,9 @@ export default function MainPage() {
         onLogout={handleLogout}
         currentTheme={themeMode}
         onToggleTheme={handleToggleTheme}
+        branches={branches}
+        activeBranchId={activeBranchId}
+        onSwitchBranch={handleSwitchBranch}
       />
 
       {/* Main Content View */}
@@ -300,6 +358,10 @@ export default function MainPage() {
           onLogout={handleLogout}
           currentTheme={themeMode}
           onToggleTheme={handleToggleTheme}
+          branches={branches}
+          activeBranchId={activeBranchId}
+          onSwitchBranch={handleSwitchBranch}
+          isSyncing={isLiveSyncing}
           onOpenSettings={() => {
             if (currentUser.role === 'admin') {
               setActiveTab('settings');
@@ -345,6 +407,8 @@ export default function MainPage() {
               staff={staff}
               services={services}
               settings={settings}
+              branches={branches}
+              activeBranchId={activeBranchId}
               activeSection={analyticsSection}
               onSectionChange={setAnalyticsSection}
               onReloadData={reloadAllData}
@@ -369,6 +433,9 @@ export default function MainPage() {
               settings={settings}
               parkingRecords={parkingRecords}
               initialBay={selectedCashierBay}
+              branches={branches}
+              activeBranchId={activeBranchId}
+              onSwitchBranch={handleSwitchBranch}
               onUpdateVehicles={handleUpdateVehicles}
               onNotify={showNotification}
             />
@@ -437,8 +504,11 @@ export default function MainPage() {
           {activeTab === 'inventory' && (
             <InventoryModule
               inventory={inventory}
+              purchases={materialPurchases}
+              expenses={expenses}
               settings={settings}
               onUpdateInventory={handleUpdateInventory}
+              onUpdatePurchases={handleUpdateMaterialPurchases}
               onAddExpense={(newExp) => handleUpdateExpenses([newExp, ...expenses])}
               onNotify={showNotification}
             />
@@ -450,6 +520,8 @@ export default function MainPage() {
             <SettingsModule
               settings={settings}
               services={services}
+              branches={branches}
+              onUpdateBranches={handleUpdateBranches}
               onUpdateSettings={handleUpdateSettings}
               onUpdateServices={handleUpdateServices}
               onNotify={showNotification}
