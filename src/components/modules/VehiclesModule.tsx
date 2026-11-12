@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Vehicle,
@@ -143,6 +143,33 @@ export const VehiclesModule: React.FC<VehiclesModuleProps> = ({
   const [vehicleSize, setVehicleSize] = useState<VehicleSize>('sedan');
   const [hasNfcSticker, setHasNfcSticker] = useState(true);
   const [customerPin, setCustomerPin] = useState('');
+
+  // Live duplicate/match vehicle detection in Add/Edit modal
+  const existingMatchedVehicle = useMemo(() => {
+    const cleanPlateNum = normalizeDigits(plateNumber.trim());
+    const cleanOldNum = normalizeDigits(oldNumber.trim());
+
+    if (plateType === 'unified' && cleanPlateNum) {
+      return vehicles.find(
+        (v) =>
+          (!editingVehicle || v.id !== editingVehicle.id) &&
+          v.plate.type === 'unified' &&
+          v.plate.provinceCode === provinceCode &&
+          v.plate.letter?.toUpperCase() === plateLetter.toUpperCase() &&
+          normalizeDigits(v.plate.number || '') === cleanPlateNum
+      );
+    }
+    if (plateType === 'old' && cleanOldNum) {
+      return vehicles.find(
+        (v) =>
+          (!editingVehicle || v.id !== editingVehicle.id) &&
+          v.plate.type === 'old' &&
+          v.plate.oldCityName === oldCity &&
+          normalizeDigits(v.plate.oldNumber || '') === cleanOldNum
+      );
+    }
+    return null;
+  }, [vehicles, plateType, provinceCode, plateLetter, plateNumber, oldCity, oldNumber, editingVehicle]);
 
   // Open Edit Modal
   const handleOpenEdit = (vehicle: Vehicle) => {
@@ -1839,6 +1866,41 @@ export const VehiclesModule: React.FC<VehiclesModuleProps> = ({
                 </div>
               )}
 
+              {/* Matched / Duplicate Vehicle Alert in Add Modal */}
+              {existingMatchedVehicle && !editingVehicle && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 rounded-xl text-xs flex items-center justify-between shadow-2xs animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <div>
+                      <span className="font-black text-amber-950 dark:text-amber-100">
+                        ئەم تابلۆیە پێشتر تۆمارکراوە بە ناوی ({existingMatchedVehicle.ownerName || 'نادیار'})
+                      </span>
+                      <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+                        {existingMatchedVehicle.carModel} • {existingMatchedVehicle.totalWashes} سەردان • مۆبایل: {existingMatchedVehicle.phone || 'نییە'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOwnerName(existingMatchedVehicle.ownerName || '');
+                      setPhone(existingMatchedVehicle.phone || '');
+                      setCarModel(existingMatchedVehicle.carModel || '');
+                      setColor(existingMatchedVehicle.color || '');
+                      if (existingMatchedVehicle.size) {
+                        setVehicleSize(existingMatchedVehicle.size);
+                      }
+                      if (existingMatchedVehicle.customerPin) {
+                        setCustomerPin(existingMatchedVehicle.customerPin);
+                      }
+                    }}
+                    className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer shrink-0 transition"
+                  >
+                    پڕکردنەوەی زانیاری ↵
+                  </button>
+                </div>
+              )}
+
               {/* Owner and Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -2073,6 +2135,41 @@ export const VehiclesModule: React.FC<VehiclesModuleProps> = ({
                       className="w-full px-2 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-slate-900 dark:text-white text-center"
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Matched / Duplicate Vehicle Alert in Add Modal */}
+              {existingMatchedVehicle && !editingVehicle && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 rounded-xl text-xs flex items-center justify-between shadow-2xs animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <div>
+                      <span className="font-black text-amber-950 dark:text-amber-100">
+                        ئەم تابلۆیە پێشتر تۆمارکراوە بە ناوی ({existingMatchedVehicle.ownerName || 'نادیار'})
+                      </span>
+                      <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+                        {existingMatchedVehicle.carModel} • {existingMatchedVehicle.totalWashes} سەردان • مۆبایل: {existingMatchedVehicle.phone || 'نییە'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOwnerName(existingMatchedVehicle.ownerName || '');
+                      setPhone(existingMatchedVehicle.phone || '');
+                      setCarModel(existingMatchedVehicle.carModel || '');
+                      setColor(existingMatchedVehicle.color || '');
+                      if (existingMatchedVehicle.size) {
+                        setVehicleSize(existingMatchedVehicle.size);
+                      }
+                      if (existingMatchedVehicle.customerPin) {
+                        setCustomerPin(existingMatchedVehicle.customerPin);
+                      }
+                    }}
+                    className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer shrink-0 transition"
+                  >
+                    پڕکردنەوەی زانیاری ↵
+                  </button>
                 </div>
               )}
 
