@@ -25,8 +25,6 @@ import {
   Check,
   LogOut,
   Smartphone,
-  Sun,
-  Moon,
   Building2,
   RefreshCw,
 } from 'lucide-react';
@@ -90,25 +88,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const [notifTab, setNotifTab] = useState<'all' | 'loyalty' | 'stock'>('all');
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const notifRef = useRef<HTMLDivElement>(null);
-
-  // Custom Modern Branch Selector state
-  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
-  const branchRef = useRef<HTMLDivElement>(null);
-
-  // Close branch dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (branchRef.current && !branchRef.current.contains(e.target as Node)) {
-        setIsBranchDropdownOpen(false);
-      }
-    };
-    if (isBranchDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isBranchDropdownOpen]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -305,17 +284,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   return (
     <header
-      className="header-safe-top h-14 sm:h-16 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 sm:px-6 flex items-center justify-between select-none sticky top-0 z-30 shadow-xs text-slate-800 dark:text-slate-100 w-full max-w-full overflow-hidden"
+      className="header-safe-top h-11 sm:h-12 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 sm:px-4 flex items-center justify-between select-none sticky top-0 z-30 shadow-2xs text-slate-800 dark:text-slate-100 w-full max-w-full overflow-hidden"
     >
       {/* Right side: Mobile Hamburger, Brand Name, Mobile Search Button, Live Desktop Search Bar & Clock */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
-            className="lg:hidden p-2 sm:px-3 sm:py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer hover:opacity-95 active:scale-95 transition"
+            className="lg:hidden p-1.5 sm:px-2.5 sm:py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs shrink-0 cursor-pointer hover:opacity-95 active:scale-95 transition"
             title="مینیۆی سەرەکی"
           >
-            <Menu className="w-4 h-4" />
+            <Menu className="w-3.5 h-3.5" />
             <span className="text-[11px] font-bold hidden sm:inline">مینیۆ</span>
           </button>
         )}
@@ -326,7 +305,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </span>
 
         {/* Compact Clock (Desktop) */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-[#F1F3F7] dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0">
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F1F3F7] dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0">
           <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
           <span className="font-mono text-[11px] font-bold text-slate-700 dark:text-slate-200" suppressHydrationWarning>
             {currentTime || '...'}
@@ -338,7 +317,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Network Status Badge (Hidden on mobile < sm to avoid nav bloat) */}
         <div
-          className={`hidden sm:flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-2xl border text-xs font-bold transition shrink-0 shadow-xs cursor-default ${
+          className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-xl border text-xs font-bold transition shrink-0 shadow-xs cursor-default ${
             isOnline
               ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
               : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60 ring-1 ring-amber-400/30 animate-pulse'
@@ -359,41 +338,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </span>
         </div>
 
-        {/* Dark / Light Mode Toggle Button */}
-        <button
-          type="button"
-          onClick={() => onToggleTheme?.()}
-          className={`p-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-            currentTheme === 'dark'
-              ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40 ring-1 ring-amber-400/30'
-              : 'bg-[#F1F3F7] hover:bg-slate-200 text-slate-700 border-slate-200/70'
-          }`}
-          title={
-            currentTheme === 'dark'
-              ? 'گۆڕین بۆ دۆخی ڕۆژ (Light Mode)'
-              : 'گۆڕین بۆ دۆخی شەوانە (Dark Mode)'
-          }
-        >
-          {currentTheme === 'dark' ? (
-            <>
-              <Sun className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-              <span className="text-xs font-bold hidden xl:inline text-amber-300">دۆخی ڕۆژ</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span className="text-xs font-bold hidden xl:inline text-slate-700">دۆخی شەوانە</span>
-            </>
-          )}
-        </button>
-
         {/* ======================================================== */}
         {/* INTERACTIVE NOTIFICATION BELL WITH FLOATING CENTER       */}
         {/* ======================================================== */}
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-            className={`relative p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl transition shadow-xs flex items-center justify-center shrink-0 cursor-pointer ${
+            className={`relative p-1.5 sm:p-2 rounded-xl transition shadow-xs flex items-center justify-center shrink-0 cursor-pointer ${
               isNotificationOpen
                 ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                 : 'bg-[#F1F3F7] hover:bg-purple-50 text-slate-600 hover:text-purple-600 border border-slate-200/60 hover:border-purple-200'
@@ -553,9 +504,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
 
         {/* Profile Avatar / User & Logout */}
-        <div className="flex items-center gap-1.5 sm:gap-2 pr-1.5 sm:pr-2 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 pr-1 sm:pr-2 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0">
           <div
-            className={`w-7 h-7 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl ${
               currentUser?.role === 'admin'
                 ? 'bg-gradient-to-tr from-purple-600 to-indigo-600'
                 : 'bg-gradient-to-tr from-blue-600 to-cyan-600'

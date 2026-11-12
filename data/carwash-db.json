@@ -120,8 +120,8 @@
       "lastVisitDate": "2026-11-12T15:56:50.232Z",
       "registeredDate": "2026-11-12T15:56:50.232Z",
       "status": "active",
-      "washStage": "چاوەڕوانی",
-      "bayEntryTime": "2026-11-12T15:56:50.232Z",
+      "washStage": "تەواوبوو",
+      "bayEntryTime": "2026-11-12T16:09:00.649Z",
       "branchId": "branch-1",
       "branchName": "لقی ١",
       "washHistory": [
@@ -136,7 +136,99 @@
           "staffId": "staff-1",
           "staffName": "وەستا ڕێبوار عەلی",
           "paymentMethod": "cash",
-          "paymentStatus": "unpaid",
+          "paymentStatus": "paid",
+          "workerCommission": 2000,
+          "isSubscriptionWash": false,
+          "branchId": "branch-1",
+          "branchName": "لقی ١"
+        }
+      ]
+    },
+    {
+      "id": "v-1794499732665",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "21",
+        "provinceName": "سلێمانی",
+        "letter": "A",
+        "number": "1256"
+      },
+      "ownerName": "کڕیاری بەڕێز",
+      "phone": "6145320",
+      "carModel": "ئۆتۆمبێل",
+      "color": "دیاری نەکراو",
+      "size": "sedan",
+      "nfcTagId": "NFC-732665",
+      "hasNfcSticker": true,
+      "totalWashes": 1,
+      "currentCycleWashes": 1,
+      "freeWashesClaimed": 0,
+      "lastVisitDate": "2026-11-12T16:08:52.665Z",
+      "registeredDate": "2026-11-12T16:08:52.665Z",
+      "status": "active",
+      "washStage": "تەواوبوو",
+      "bayEntryTime": "2026-11-12T16:09:04.345Z",
+      "branchId": "branch-1",
+      "branchName": "لقی ١",
+      "washHistory": [
+        {
+          "id": "w-1794499732665",
+          "date": "2026-11-12T16:08:52.665Z",
+          "serviceId": "srv-1",
+          "serviceName": "شۆردنی ئاسایی (دەرەوە + ناوەوە)",
+          "price": 10000,
+          "isFree": false,
+          "vehicleSize": "sedan",
+          "staffId": "staff-1",
+          "staffName": "وەستا ڕێبوار عەلی",
+          "paymentMethod": "cash",
+          "paymentStatus": "paid",
+          "workerCommission": 2000,
+          "isSubscriptionWash": false,
+          "branchId": "branch-1",
+          "branchName": "لقی ١"
+        }
+      ]
+    },
+    {
+      "id": "v-1794499897056",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "21",
+        "provinceName": "سلێمانی",
+        "letter": "A",
+        "number": "8456"
+      },
+      "ownerName": "کڕیاری بەڕێز",
+      "phone": "",
+      "carModel": "ئۆتۆمبێل",
+      "color": "دیاری نەکراو",
+      "size": "sedan",
+      "nfcTagId": "NFC-897056",
+      "hasNfcSticker": true,
+      "totalWashes": 1,
+      "currentCycleWashes": 1,
+      "freeWashesClaimed": 0,
+      "lastVisitDate": "2026-11-12T16:11:37.056Z",
+      "registeredDate": "2026-11-12T16:11:37.056Z",
+      "status": "active",
+      "washStage": "تەواوبوو",
+      "bayEntryTime": "2026-11-12T16:12:12.720Z",
+      "branchId": "branch-1",
+      "branchName": "لقی ١",
+      "washHistory": [
+        {
+          "id": "w-1794499897056",
+          "date": "2026-11-12T16:11:37.056Z",
+          "serviceId": "srv-1",
+          "serviceName": "شۆردنی ئاسایی (دەرەوە + ناوەوە)",
+          "price": 10000,
+          "isFree": false,
+          "vehicleSize": "sedan",
+          "staffId": "staff-1",
+          "staffName": "وەستا ڕێبوار عەلی",
+          "paymentMethod": "cash",
+          "paymentStatus": "paid",
           "workerCommission": 2000,
           "isSubscriptionWash": false,
           "branchId": "branch-1",
@@ -145,7 +237,17 @@
       ]
     }
   ],
-  "expenses": [],
+  "expenses": [
+    {
+      "id": "exp-1794500025738",
+      "title": "کڕینی مەواد: مەوادی پۆڵیش (3M Fast Cut Plus Extreme) (2.1 بتڵ)",
+      "category": "مەواد و شامپۆ",
+      "amount": 73500,
+      "date": "2026-11-12",
+      "notes": "کڕدراو لە: سەنتەری 3M",
+      "paidTo": "سەنتەری 3M"
+    }
+  ],
   "setupItems": [],
   "staff": [
     {
@@ -389,7 +491,7 @@
         "isMain": false
       }
     ],
-    "activeBranchId": "branch-1",
+    "activeBranchId": "branch-2",
     "autoSyncIntervalMs": 1500
   },
   "inventory": [
@@ -419,11 +521,11 @@
       "id": "inv-3m-fastcut",
       "name": "مەوادی پۆڵیش (3M Fast Cut Plus Extreme)",
       "category": "واکس و پۆڵیش",
-      "quantity": 6,
+      "quantity": 8.1,
       "unit": "بتڵ",
       "minAlertLevel": 2,
       "costPerUnit": 35000,
-      "lastRestocked": "2026-11-08",
+      "lastRestocked": "2026-11-12",
       "notes": "بۆ پاککردنەوەی شوختی بۆیە و نەهێشتنی پەڵە"
     },
     {
@@ -664,6 +766,6 @@
       "carModel": "Chevrolet Malibu 2018"
     }
   ],
-  "lastUpdated": "2026-11-12T15:56:50.475Z",
+  "lastUpdated": "2026-11-12T16:18:03.163Z",
   "version": "2026-production-v1"
 }

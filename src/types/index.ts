@@ -214,6 +214,7 @@ export interface Vehicle {
   freeWashesClaimed: number;
   lastVisitDate: string; // ISO string
   registeredDate: string;
+  updatedAt?: string; // ISO string when last created or modified
   status: 'active' | 'expired';
   currentBay?: number;
   currentBayBranchId?: string; // شوناسی لقی ئەکتیڤ کە سەیارەکەی تێدایە لەناو هۆڵ

@@ -67,6 +67,18 @@ export function broadcastLocalChange(keyName?: string): void {
   } catch {}
 }
 
+// Local mutation tracker & race condition guard
+let isSyncingToServer = false;
+let lastLocalMutationTime = 0;
+
+export function markLocalMutation(): void {
+  lastLocalMutationTime = Date.now();
+}
+
+export function isLocalMutationRecent(windowMs = 4000): boolean {
+  return Date.now() - lastLocalMutationTime < windowMs;
+}
+
 // Safe storage helper with quota guard
 export function safeStorageSet(key: string, value: string): void {
   if (typeof window === 'undefined') return;
@@ -217,6 +229,7 @@ export function getSavedSetupItems(): SetupItem[] {
 
 export function saveSetupItems(items: SetupItem[]): void {
   if (typeof window !== 'undefined') {
+    markLocalMutation();
     localStorage.setItem(KEYS.SETUP, JSON.stringify(items));
     triggerServerSync();
   }
@@ -242,6 +255,7 @@ export function getSavedExpenses(): Expense[] {
 
 export function saveExpenses(items: Expense[]): void {
   if (typeof window !== 'undefined') {
+    markLocalMutation();
     localStorage.setItem(KEYS.EXPENSES, JSON.stringify(items));
     triggerServerSync();
   }
@@ -264,6 +278,7 @@ export function getSavedServices(): ServiceItem[] {
 
 export function saveServices(items: ServiceItem[]): void {
   if (typeof window !== 'undefined') {
+    markLocalMutation();
     localStorage.setItem(KEYS.SERVICES, JSON.stringify(items));
     triggerServerSync();
   }
@@ -295,7 +310,13 @@ export function getSavedVehicles(): Vehicle[] {
 
 export function saveVehicles(items: Vehicle[]): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(KEYS.VEHICLES, JSON.stringify(items));
+    markLocalMutation();
+    const nowISO = new Date().toISOString();
+    const stampedItems = items.map((v) => ({
+      ...v,
+      updatedAt: v.updatedAt || nowISO,
+    }));
+    localStorage.setItem(KEYS.VEHICLES, JSON.stringify(stampedItems));
     triggerServerSync();
   }
 }
@@ -348,6 +369,7 @@ export function getSavedStaff(): StaffMember[] {
 
 export function saveStaff(items: StaffMember[]): void {
   if (typeof window !== 'undefined') {
+    markLocalMutation();
     localStorage.setItem(KEYS.STAFF, JSON.stringify(items));
     triggerServerSync();
   }
@@ -402,6 +424,7 @@ export function getSavedInventory(): InventoryItem[] {
 
 export function saveInventory(items: InventoryItem[]): void {
   if (typeof window !== 'undefined') {
+    markLocalMutation();
     localStorage.setItem(KEYS.INVENTORY, JSON.stringify(items));
     triggerServerSync();
   }
@@ -487,6 +510,7 @@ export function getSavedSettings(): AppSettings {
 
 export function saveSettings(settings: AppSettings): void {
   if (typeof window !== 'undefined') {
+    markLocalMutation();
     localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
     broadcastLocalChange(KEYS.SETTINGS);
     triggerServerSync();
@@ -566,6 +590,7 @@ export function getSavedParkingRecords(): ParkingRecord[] {
 
 export function saveParkingRecords(records: ParkingRecord[]): void {
   if (typeof window !== 'undefined') {
+    markLocalMutation();
     localStorage.setItem(KEYS.PARKING, JSON.stringify(records));
     triggerServerSync();
   }
@@ -1033,12 +1058,14 @@ let syncDebounceTimer: any = null;
 
 export function triggerServerSync(immediate = false): void {
   if (typeof window === 'undefined') return;
+  markLocalMutation();
   // Immediately inform other tabs on the same device
   broadcastLocalChange();
 
   if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
 
   const doSync = async () => {
+    isSyncingToServer = true;
     try {
       const payload = {
         vehicles: getSavedVehicles(),
@@ -1070,14 +1097,16 @@ export function triggerServerSync(immediate = false): void {
       }
     } catch {
       // Offline fallback: localStorage holds state safely
+    } finally {
+      isSyncingToServer = false;
     }
   };
 
   if (immediate) {
     doSync();
   } else {
-    // Ultra-fast 120ms debounce for rapid auto-saving without server bottleneck
-    syncDebounceTimer = setTimeout(doSync, 120);
+    // Ultra-fast 80ms debounce for rapid auto-saving without server bottleneck
+    syncDebounceTimer = setTimeout(doSync, 80);
   }
 }
 
@@ -1094,6 +1123,10 @@ if (typeof window !== 'undefined') {
 
 export async function pullServerDatabase(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
+  // If user recently made local changes, do not overwrite them with older server data
+  if (isLocalMutationRecent(3500) || isSyncingToServer) {
+    return false;
+  }
   try {
     const res = await fetch('/api/sync', {
       cache: 'no-store',
@@ -1102,6 +1135,9 @@ export async function pullServerDatabase(): Promise<boolean> {
     if (!res.ok) return false;
     const json = await res.json();
     if (json.success && json.data) {
+      if (isLocalMutationRecent(3500) || isSyncingToServer) {
+        return false;
+      }
       const data = json.data;
       if (Array.isArray(data.vehicles)) {
         safeStorageSet(KEYS.VEHICLES, JSON.stringify(data.vehicles));
@@ -1153,6 +1189,10 @@ export async function pullServerDatabase(): Promise<boolean> {
 // Lightweight heartbeat to check if other devices or users made updates
 export async function checkServerUpdates(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
+  // If user recently made local changes or sync is in-flight, do not pull
+  if (isLocalMutationRecent(3500) || isSyncingToServer) {
+    return false;
+  }
   try {
     const res = await fetch('/api/sync?checkOnly=1', { cache: 'no-store' });
     if (!res.ok) return false;
@@ -1160,6 +1200,9 @@ export async function checkServerUpdates(): Promise<boolean> {
     if (json.success && json.lastUpdated) {
       const localTs = localStorage.getItem(KEYS.LAST_SYNC_TS) || '';
       if (json.lastUpdated !== localTs) {
+        if (isLocalMutationRecent(3500) || isSyncingToServer) {
+          return false;
+        }
         return await pullServerDatabase();
       }
     }

@@ -59,7 +59,6 @@ import {
   AlertCircle,
   AlertTriangle,
   X,
-  Zap,
   Volume2,
   VolumeX,
   Receipt,
@@ -873,8 +872,14 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     setCarpetNotes('');
   };
 
-  // Fast Submit from Standard Form (Direct Registration & Start / Queue)
-  const handleFastRegisterAndAdmit = (e?: React.FormEvent, shouldPrintReceipt = true) => {
+  // Fast Submit from Standard Form:
+  // mode: 'wash_now' (Start wash in bay directly, payment upon exit/during wash - PRIMARY)
+  // mode: 'pay_now' (Pay upfront & print receipt immediately)
+  // mode: 'queue' (Put in waiting list)
+  const handleFastRegisterAndAdmit = (
+    e?: React.FormEvent,
+    mode: 'wash_now' | 'pay_now' | 'queue' = 'wash_now'
+  ) => {
     if (e) e.preventDefault();
 
     let builtPlate: LicensePlate;
@@ -926,8 +931,15 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     const finalPrice = isFree ? 0 : calculateServicePrice(srv, vehicleSize);
     const workerCommission = calculateWorkerCommission(worker, finalPrice);
 
-    const isPaidNow = shouldPrintReceipt;
-    const initialStage = isPaidNow ? ('کەفڕێژکردن' as const) : ('چاوەڕوانی' as const);
+    const isPaidNow = mode === 'pay_now';
+    const initialStage = mode === 'queue' ? ('چاوەڕوانی' as const) : ('کەفڕێژکردن' as const);
+
+    // Auto-detect first empty bay if entering bay directly
+    const occupiedBays = vehicles
+      .filter((v) => v.currentBay && v.washStage)
+      .map((v) => v.currentBay);
+    const firstEmptyBay = bays.find((b) => !occupiedBays.includes(b)) || 1;
+    const assignedBay = mode === 'queue' ? undefined : (targetBay > 0 ? targetBay : firstEmptyBay);
 
     const newRecord: WashRecord = {
       id: `w-${Date.now()}`,
@@ -940,6 +952,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
       vehicleSize,
       staffId: worker?.id,
       staffName: worker?.name,
+      bayNumber: assignedBay,
       paymentMethod: 'cash' as const,
       paymentStatus: isPaidNow ? ('paid' as const) : ('unpaid' as const),
       workerCommission,
@@ -960,6 +973,9 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
         carModel: carModel.trim() || matchedExistingVehicle.carModel,
         color: color.trim() || matchedExistingVehicle.color,
         size: vehicleSize,
+        currentBay: assignedBay,
+        assignedWorkerId: worker?.id,
+        assignedWorkerName: worker?.name,
         totalWashes: matchedExistingVehicle.totalWashes + 1,
         currentCycleWashes: isLoyaltyFree
           ? 0
@@ -991,6 +1007,9 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
         size: vehicleSize,
         nfcTagId: nfcCode,
         hasNfcSticker: true,
+        currentBay: assignedBay,
+        assignedWorkerId: worker?.id,
+        assignedWorkerName: worker?.name,
         totalWashes: 1,
         currentCycleWashes: 1,
         freeWashesClaimed: 0,
@@ -1010,7 +1029,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
 
     onUpdateVehicles(updatedVehicles);
 
-    if (shouldPrintReceipt) {
+    if (mode === 'pay_now') {
       if (soundEnabled) playPosSound('success');
       setPrintedReceiptData({
         vehicle: targetVehicleForReceipt,
@@ -1027,8 +1046,13 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
       onNotify(
         isLoyaltyFree
           ? `🎉 پیرۆزە! شۆردنی بەخۆڕایی (Free) تۆمارکرا و پسوولەکەی چاپکرا (${branchName})!`
-          : `🎉 پسوولەی ${carModel || 'سەیارە'} تۆمارکرا بە نرخی ${formatIQD(finalPrice)} (${branchName}) 🖨️`
+          : `🎉 پارەی پێشەکی (${formatIQD(finalPrice)}) واسڵکرا و پسوولەی ${carModel || 'سەیارە'} چاپکرا (${branchName}) 🖨️`
       );
+      setActiveListTab('all');
+    } else if (mode === 'wash_now') {
+      if (soundEnabled) playPosSound('beep');
+      onNotify(`🚿 سەیارەی ${carModel || 'سەیارە'} چووە هۆڵی ${assignedBay} بۆ شۆردن (پارەدان لە کاتی دەرچوون).`);
+      setActiveListTab('all');
     } else {
       if (soundEnabled) playPosSound('beep');
       onNotify(`⏳ سەیارەی نوێ (${carModel || 'سەیارە'}) خرایە ڕیزی چاوەڕوانی (${branchName}).`);
@@ -1400,8 +1424,13 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
   const handleCompleteAndExit = (vehicle: Vehicle) => {
     const latest = vehicle.washHistory?.[0];
     if (latest && latest.paymentStatus === 'unpaid') {
-      handleInitiateCheckout(vehicle);
-      return;
+      const confirmPay = window.confirm(
+        `ئەم سەیارەیە (${vehicle.carModel || 'سەیارە'}) هێشتا پارەکەی نەداوە!\nئایا دەتەوێت سەرەتا پارەکەی لێ وەرگریت و پسوولەی بۆ ببڕیت؟`
+      );
+      if (confirmPay) {
+        handleInitiateCheckout(vehicle);
+        return;
+      }
     }
 
     const updated = vehicles.map((v) => {
@@ -1423,6 +1452,30 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     onNotify(`🏁 سەیارەی ${vehicle.carModel || 'سەیارە'} تەواو بوو و دەربازکرا.`);
   };
 
+  // Toggle vehicle payment status back to unpaid (in case it was marked paid by mistake)
+  const handleToggleUnpaid = (vehicle: Vehicle) => {
+    const updated = vehicles.map((v) => {
+      if (v.id === vehicle.id) {
+        const history = [...(v.washHistory || [])];
+        if (history.length > 0) {
+          history[0] = {
+            ...history[0],
+            paymentStatus: 'unpaid' as const,
+            paidAt: undefined,
+          };
+        }
+        return {
+          ...v,
+          washHistory: history,
+        };
+      }
+      return v;
+    });
+    onUpdateVehicles(updated);
+    if (soundEnabled) playPosSound('beep');
+    onNotify(`دۆخی پارەی (${vehicle.carModel || 'سەیارەکە'}) گۆڕدرا بۆ: چاوەڕوانی پارەدان (پارەی نەداوە).`);
+  };
+
   // Selected Service object
   const currentSelectedService =
     services.find((s) => s.id === selectedServiceId) || services[0];
@@ -1437,122 +1490,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
 
   return (
     <div className="space-y-4 w-full max-w-full min-w-0 overflow-x-hidden" dir="rtl">
-      {/* ----------------- MODERN POS TOP COMMAND BAR ----------------- */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xs w-full max-w-full min-w-0 overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white shadow-xs flex items-center justify-center shrink-0">
-            <Zap className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-              <span>کاشێر و وەرگرتن</span>
-              <span className="text-[10px] bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/60 font-mono font-bold">
-                POS
-              </span>
-            </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              تۆماری خێرای تابلۆ، شۆردنی ڕاستەوخۆ و دەرکردنی پسوولە
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none w-full max-w-full min-w-0">
-          {/* Today's Sales Live Badge (Washes + Garage) */}
-          <div className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/90 dark:border-emerald-800 text-xs flex items-center gap-1.5 sm:gap-2 text-emerald-950 dark:text-emerald-200 shadow-2xs shrink-0">
-            <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <div className="flex items-center gap-1.5">
-              <span className="text-emerald-700 dark:text-emerald-300 text-[11px] font-bold">فرۆشی ئەمڕۆ:</span>
-              <strong className="text-emerald-950 dark:text-emerald-100 font-mono font-black text-xs">
-                {formatIQD(todaySalesTotal)}
-              </strong>
-              <span className="text-[10px] bg-emerald-200/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 px-1.5 py-0.5 rounded-full font-bold">
-                {todayWashesCount} شۆردن
-              </span>
-            </div>
-          </div>
-
-          {/* Real-time Server Sync / Refresh Button */}
-          <button
-            type="button"
-            onClick={handleManualSync}
-            disabled={isSyncing}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer ${
-              isSyncing
-                ? 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse'
-                : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-            }`}
-            title="تازەکردنەوەی خێرای داتای فرۆش لەگەڵ سێرڤەر"
-          >
-            <RotateCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-600' : 'text-slate-500 dark:text-slate-400'}`} />
-            <span className="hidden sm:inline">{isSyncing ? 'نوێکردنەوە...' : 'تازەکردنەوەی داتا'}</span>
-            <span className="sm:hidden">{isSyncing ? '...' : 'نوێکردنەوە'}</span>
-          </button>
-
-          {/* Active Branch Status Pill */}
-          <div className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800/70 text-xs flex items-center gap-1.5 text-blue-900 dark:text-blue-200 shadow-2xs shrink-0">
-            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="text-slate-600 dark:text-slate-400 text-[11px] hidden sm:inline">لق:</span>
-            <strong className="text-blue-950 dark:text-white font-black text-xs">
-              {selectedBranch === 'branch-1' ? 'لقی ١' : 'لقی ٢'}
-            </strong>
-          </div>
-
-          {/* Unpaid / Debt Cars Button */}
-          {unpaidRecordsList.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowDebtListModal(true)}
-              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
-              title="بینینی سەیارەکانی قەرز و وەرگرتنەوە"
-            >
-              <Coins className="w-3.5 h-3.5 text-rose-600" />
-              <span>
-                قەرز: <strong>{unpaidRecordsList.length}</strong>
-              </span>
-            </button>
-          )}
-
-          {/* Petty Cash Drawer Outflow Button */}
-          <button
-            type="button"
-            onClick={() => setShowPettyCashModal(true)}
-            className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
-            title="کێشانەوەی خەرجی بەپەلە لە سندووق (Petty Cash)"
-          >
-            <Wallet className="w-3.5 h-3.5" />
-            <span>خەرجی سندووق</span>
-          </button>
-
-          {/* End of Day Z-Report Button */}
-          <button
-            type="button"
-            onClick={() => setShowZReportModal(true)}
-            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
-            title="داخستنی سندووقی ئەمڕۆ و پرینتی Z-Report بۆ خاوەنکار"
-          >
-            <Receipt className="w-3.5 h-3.5" />
-            <span>داخستنی سندووق (Z-Report)</span>
-          </button>
-
-          {/* Action Icon Tools Group */}
-          <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 p-0.5 shadow-2xs shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                const next = !soundEnabled;
-                setSoundEnabled(next);
-                if (next) playPosSound('beep');
-              }}
-              className={`p-1.5 rounded-lg transition cursor-pointer ${
-                soundEnabled ? 'text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-700 shadow-2xs' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-              }`}
-              title={soundEnabled ? 'دەنگ چالاکە' : 'دەنگ بێدەنگە'}
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Happy Hour Active Banner */}
       {isHappyHourActive && (
@@ -1926,8 +1864,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
               </div>
             </form>
           ) : (
-          /* Fast Unified Form */
-          <form onSubmit={handleFastRegisterAndAdmit} className="space-y-3 text-xs">
+            <form onSubmit={(e) => handleFastRegisterAndAdmit(e, 'wash_now')} className="space-y-3 text-xs">
             {/* Plate Type Selector */}
               <div className="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button
@@ -2330,28 +2267,44 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
 
               {/* Action Submit Buttons */}
               <div className="space-y-2 pt-2">
-                {/* 1. Primary: Register to Waiting List (Default when clicking Enter or submitting) */}
+                {/* 1. Primary: Start Washing Now in Bay (Payment later upon finish or checkout) */}
                 <button
                   type="submit"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleFastRegisterAndAdmit(undefined, false);
+                    handleFastRegisterAndAdmit(undefined, 'wash_now');
                   }}
-                  className="w-full h-12 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-black shadow-md shadow-amber-500/25 transition flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-12 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-black shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Layers className="w-5 h-5" />
-                  <span>📥 داخڵکردن بۆ ڕیزی چاوەڕوانی (پارەدان دواتر) ⏳</span>
+                  <Sparkles className="w-5 h-5 text-emerald-200" />
+                  <span>🚿 داخڵکردن بۆ غەسل و دەستپێکردنی شۆردن</span>
                 </button>
+                <div className="text-[10px] text-center text-slate-500 dark:text-slate-400 font-bold -mt-1">
+                  (سەیارە دەچێتە هۆڵ • پارەدان دواتر لە کاتی شۆردن یان دەرچوون ⏳)
+                </div>
 
-                {/* 2. Secondary: Register, Start Washing & Print Receipt Immediately */}
-                <button
-                  type="button"
-                  onClick={() => handleFastRegisterAndAdmit(undefined, true)}
-                  className="w-full h-10 bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/40 text-slate-700 hover:text-emerald-700 dark:text-slate-200 dark:hover:text-emerald-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-emerald-300"
-                >
-                  <Printer className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>⚡ دەستبەجێ شۆردن و واسڵکردنی پارە + پسوولە 🖨️</span>
-                </button>
+                {/* 2. Secondary & Queue Row */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFastRegisterAndAdmit(undefined, 'pay_now')}
+                    className="py-2.5 px-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1.5 cursor-pointer border border-blue-200 dark:border-blue-800 shadow-2xs"
+                    title="ئەگەر کڕیار پارەکەی پێشوەختە داوە"
+                  >
+                    <Printer className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>💰 وەرگرتنی پێشەکی + پسوولە</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleFastRegisterAndAdmit(undefined, 'queue')}
+                    className="py-2.5 px-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1.5 cursor-pointer border border-amber-200 dark:border-amber-800 shadow-2xs"
+                    title="دانان لە نۆبەی چاوەڕوانی ئەگەر هۆڵەکان پڕ بن"
+                  >
+                    <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>⏳ دانان لە چاوەڕوانی</span>
+                  </button>
+                </div>
               </div>
             </form>
           )}
@@ -2364,34 +2317,85 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
           }`}
         >
           {/* Header */}
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
-                <Car className="w-5 h-5" />
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-2xs">
+                <Car className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <span>ئۆتۆمبێلەکانی ناو غەسل</span>
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                     {activeYardCars.length} لە غەسلدا
                   </span>
                 </h3>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  لیستی چاوەڕوانی، دەستپێکردنی شۆردن، و واسڵکردنی پارە لە کاتی دەرچوون
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  لیستی چاوەڕوانی، دەستپێکردنی شۆردن، و واسڵکردنی پارە
                 </p>
               </div>
             </div>
 
-            {/* Quick Live Counters */}
+            {/* Cashier Action Tools & Live Counters */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setShowPettyCashModal(true)}
+                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                title="کێشانەوەی خەرجی بەپەلە لە سندووق (Petty Cash)"
+              >
+                <Wallet className="w-3.5 h-3.5" />
+                <span>خەرجی سندووق</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowZReportModal(true)}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                title="داخستنی سندووقی ئەمڕۆ و پرینتی Z-Report بۆ خاوەنکار"
+              >
+                <Receipt className="w-3.5 h-3.5" />
+                <span>داخستنی سندووق (Z)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className={`p-1 rounded-lg border transition cursor-pointer ${
+                  isSyncing
+                    ? 'text-blue-600 bg-blue-100 border-blue-300 animate-spin'
+                    : 'text-slate-500 bg-slate-50 hover:bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                }`}
+                title="نوێکردنەوەی خێرای داتای فرۆش لەگەڵ سێرڤەر"
+              >
+                <RotateCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !soundEnabled;
+                  setSoundEnabled(next);
+                  if (next) playPosSound('beep');
+                }}
+                className={`p-1 rounded-lg border transition cursor-pointer ${
+                  soundEnabled
+                    ? 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800'
+                    : 'text-slate-400 bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700'
+                }`}
+                title={soundEnabled ? 'دەنگ چالاکە' : 'دەنگ بێدەنگە'}
+              >
+                {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-2xs">
                 ⏳ چاوەڕێیە: {waitingCars.length}
               </span>
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-2xs">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-2xs">
                 🚿 لە شۆردندایە: {washingCars.length}
               </span>
               {unpaidCars.length > 0 && (
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-2xs">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-2xs">
                   💰 پارەی ماوە: {unpaidCars.length}
                 </span>
               )}
@@ -2715,41 +2719,118 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
                           </div>
                         )}
 
+                        {/* Service & Price Summary Banner */}
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-slate-100 dark:bg-slate-700/60 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600">
+                          <span className="text-slate-700 dark:text-slate-200 flex items-center gap-1.5 font-bold truncate">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            <span className="truncate">{latestWash?.serviceName || 'شۆردنی ئاسایی'}</span>
+                          </span>
+                          <span className="font-black text-sm text-emerald-700 dark:text-emerald-400 font-mono shrink-0">
+                            {formatIQD(washPrice)}
+                          </span>
+                        </div>
+
                         {/* Footer Actions: Settle / Pay Button + Print + Exit */}
-                        <div className="pt-2 border-t border-slate-100 dark:border-slate-700/80 space-y-1.5">
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-700/80 space-y-2">
                           {/* Settle / Paid status action button */}
                           {!isPaid ? (
-                            <button
-                              type="button"
-                              onClick={() => handleMarkAsPaid(car)}
-                              className="w-full py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 active:scale-98 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer transition"
-                              title="واسڵکردنی پارە و چاپکردنی پسوولە"
-                            >
-                              <Coins className="w-4 h-4 text-emerald-200" />
-                              <span>واسڵکردنی پارە ({formatIQD(washPrice)}) و بڕینی پسوولە 🖨️</span>
-                            </button>
-                          ) : (
-                            <div className="grid grid-cols-2 gap-1.5">
+                            <div className="space-y-1.5 p-2 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 shadow-2xs">
+                              <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200">
+                                <span className="flex items-center gap-1.5">
+                                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                  <span>پارەی ماوە (نەدراوە):</span>
+                                </span>
+                                <span className="font-black font-mono text-sm text-amber-950 dark:text-amber-100">
+                                  {formatIQD(washPrice)}
+                                </span>
+                              </div>
+
+                              {/* Big Main Payment Button */}
                               <button
                                 type="button"
-                                onClick={() => handleQuickPrintReceipt(car)}
-                                className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                onClick={() => handleInitiateCheckout(car)}
+                                className="w-full py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 active:scale-98 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer transition animate-pulse"
+                                title="وەرگرتنی پارەی شۆردن بە نەقد، قەرز، یان کارت"
                               >
-                                <Printer className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                <span>چاپکردنی پسوولە</span>
+                                <Coins className="w-4 h-4 text-emerald-100" />
+                                <span>وەرگرتنی پارە ({formatIQD(washPrice)}) و پسوولە ↵</span>
                               </button>
 
+                              {/* Fast 1-Click Shortcuts */}
+                              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkAsPaid(car, 'cash')}
+                                  className="py-1.5 px-2 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                                  title="وەرگرتنی ڕاستەوخۆ بە نەقد لەگەڵ پسوولە"
+                                >
+                                  <span>⚡ وەرگیرا بە نەقد</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkAsPaid(car, 'debt')}
+                                  className="py-1.5 px-2 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-700 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                                  title="تۆمارکردن بە قەرز"
+                                >
+                                  <span>⚠️ تۆمار بە قەرز</span>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5 p-2 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/80">
+                              <div className="flex items-center justify-between text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>پارەکەی دراوە:</span>
+                                </span>
+                                <span className="font-black font-mono text-emerald-950 dark:text-emerald-100">
+                                  {formatIQD(washPrice)} ({latestWash?.paymentMethod === 'debt' ? 'قەرز' : 'نەقد'})
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickPrintReceipt(car)}
+                                  className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <Printer className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                  <span>چاپکردنی پسوولە</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleInitiateCheckout(car)}
+                                  className="py-1.5 px-2 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                                  title="دەستکاریکردنی شێوازی پارەدان، قەرز، یان بڕی پارە"
+                                >
+                                  <CreditCard className="w-3 h-3 text-slate-500" />
+                                  <span>دەستکاری پارە</span>
+                                </button>
+                              </div>
+
+                              {/* Reset to Unpaid button if marked paid by mistake */}
                               <button
                                 type="button"
-                                onClick={() => handleCompleteAndExit(car)}
-                                className="py-1.5 px-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-                                title="سەیارە غەسلی بەجێهێشت"
+                                onClick={() => handleToggleUnpaid(car)}
+                                className="w-full py-0.5 text-[10px] text-amber-700 dark:text-amber-300 hover:underline text-center cursor-pointer font-bold"
                               >
-                                <LogOut className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>تەواو • دەرچوون 🏁</span>
+                                🔄 بە هەڵە واسڵکراوە؟ کلیک بکە بۆ گۆڕین بۆ (پارەی نەداوە)
                               </button>
                             </div>
                           )}
+
+                          {/* Complete & Exit Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleCompleteAndExit(car)}
+                            className="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                            title="سەیارە غەسلی بەجێهێشت"
+                          >
+                            <LogOut className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>تەواو • دەرچوون لە غەسل 🏁</span>
+                          </button>
 
                           {/* Extra Add-ons: Cafe, VIP */}
                           <div className="flex items-center gap-1 pt-0.5">

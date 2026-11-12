@@ -105,39 +105,55 @@ export function getInitialDatabasePayload(): DatabasePayload {
 
 // Intelligent Concurrency Merging for Multi-User & Multi-Device
 function mergeVehicles(incoming?: Vehicle[], current?: Vehicle[]): Vehicle[] {
-  if (!incoming || incoming.length === 0) return current || [];
+  if (!incoming) return current || [];
   if (!current || current.length === 0) return incoming;
 
-  const map = new Map<string, Vehicle>();
-  current.forEach((v) => map.set(v.id, v));
+  const currentMap = new Map<string, Vehicle>();
+  current.forEach((v) => currentMap.set(v.id, v));
 
-  incoming.forEach((v) => {
-    const existing = map.get(v.id);
-    if (!existing) {
-      map.set(v.id, v);
-    } else {
-      // Merge wash histories by unique wash ID
-      const washMap = new Map<string, any>();
-      (existing.washHistory || []).forEach((w) => washMap.set(w.id, w));
-      (v.washHistory || []).forEach((w) => washMap.set(w.id, w));
-      const mergedWashes = Array.from(washMap.values()).sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+  const incomingIds = new Set<string>();
+  const mergedList: Vehicle[] = incoming.map((inc) => {
+    incomingIds.add(inc.id);
+    const curr = currentMap.get(inc.id);
+    if (!curr) {
+      return {
+        ...inc,
+        updatedAt: inc.updatedAt || new Date().toISOString(),
+      };
+    }
 
-      // Determine the fresher metadata (using bayEntryTime or lastVisitDate)
-      const existingTime = new Date(existing.bayEntryTime || existing.lastVisitDate || existing.registeredDate || 0).getTime();
-      const incomingTime = new Date(v.bayEntryTime || v.lastVisitDate || v.registeredDate || 0).getTime();
-      const fresher = incomingTime >= existingTime ? v : existing;
+    // Merge wash histories by unique wash ID so past records from other devices are never lost
+    const washMap = new Map<string, any>();
+    (curr.washHistory || []).forEach((w) => washMap.set(w.id, w));
+    (inc.washHistory || []).forEach((w) => washMap.set(w.id, w));
+    const mergedWashes = Array.from(washMap.values()).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
-      map.set(v.id, {
-        ...fresher,
-        washHistory: mergedWashes,
-        totalWashes: mergedWashes.length,
-      });
+    // The incoming vehicle is authoritative for active user state (bays, stage, edits)
+    return {
+      ...curr,
+      ...inc,
+      washHistory: mergedWashes,
+      totalWashes: Math.max(inc.totalWashes || 0, mergedWashes.length),
+      updatedAt: inc.updatedAt || new Date().toISOString(),
+    };
+  });
+
+  // Preserve any vehicles that were registered on another device within the last 5 minutes
+  // but allow actual deliberate deletions of older vehicles
+  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+  current.forEach((curr) => {
+    if (!incomingIds.has(curr.id)) {
+      const regTime = new Date(curr.registeredDate || 0).getTime();
+      const updTime = new Date(curr.updatedAt || 0).getTime();
+      if (regTime > fiveMinutesAgo || updTime > fiveMinutesAgo) {
+        mergedList.push(curr);
+      }
     }
   });
 
-  return Array.from(map.values());
+  return mergedList;
 }
 
 function mergeEntitiesById<T extends { id: string }>(incoming?: T[], current?: T[]): T[] {
