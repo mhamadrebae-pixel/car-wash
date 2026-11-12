@@ -9,6 +9,7 @@ import {
   InventoryItem,
   CafeItem,
   ParkingRecord,
+  Branch,
 } from '@/types';
 
 export function getDaysAgoISO(days: number, hour = 12, minute = 0): string {
@@ -26,6 +27,29 @@ export function getDaysAgoDateStr(days: number): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+export const defaultBranches: Branch[] = [
+  {
+    id: 'branch-1',
+    name: 'لقی ١ (سەرەکی)',
+    code: 'B1',
+    address: 'سلێمانی - شەقامی بازنەیی مەلیک مەحمود',
+    phone: '0770 123 4567',
+    numberOfBays: 3,
+    managerName: 'وەستا ڕێبوار عەلی',
+    isMain: true,
+  },
+  {
+    id: 'branch-2',
+    name: 'لقی ٢',
+    code: 'B2',
+    address: 'سلێمانی - ڕاپەڕین بەرامبەر زانکۆ',
+    phone: '0750 987 6543',
+    numberOfBays: 2,
+    managerName: 'وەستا ئاراس مەحمود',
+    isMain: false,
+  },
+];
 
 export const defaultSettings: AppSettings = {
   // Identity
@@ -84,59 +108,59 @@ export const defaultSettings: AppSettings = {
 
 export const defaultInventoryItems: InventoryItem[] = [
   {
-    id: 'inv-1',
-    name: 'شامپۆی کەفی چڕ (Active Snow Foam)',
-    category: 'شامپۆ و کەف',
-    quantity: 45,
-    unit: 'لیتر',
-    minAlertLevel: 10,
-    costPerUnit: 4000,
-    lastRestocked: '2026-10-15',
-    notes: 'مارکەی ئیتالی بۆ پەمپی کەف',
-  },
-  {
-    id: 'inv-2',
-    name: 'واکسی درەوشێنەر و پارێزەر (Liquid Carnauba)',
-    category: 'واکس و پۆڵیش',
-    quantity: 18,
-    unit: 'لیتر',
-    minAlertLevel: 5,
-    costPerUnit: 12000,
-    lastRestocked: '2026-10-10',
-    notes: 'بۆ قۆناغی کۆتایی شۆردنی VIP',
-  },
-  {
-    id: 'inv-3',
-    name: 'مەوادی پۆڵیشی زبر و ورد (3M Fast Cut)',
+    id: 'inv-koch-pw',
+    name: 'Koch-Chemie Protector Wax (Pw) 1L',
     category: 'واکس و پۆڵیش',
     quantity: 6,
-    unit: 'دانە',
+    unit: 'بتڵ',
+    minAlertLevel: 2,
+    costPerUnit: 28000,
+    lastRestocked: '2026-11-12',
+    notes: 'واکسی پارێزەر و هایدرۆفۆبیکی پلە یەکی ئەڵمانی بۆ درەوشانەوەی VIP',
+  },
+  {
+    id: 'inv-koch-gs',
+    name: 'Koch-Chemie Green Star (Gs) 1L',
+    category: 'شامپۆ و کەف',
+    quantity: 10,
+    unit: 'بتڵ',
+    minAlertLevel: 3,
+    costPerUnit: 20000,
+    lastRestocked: '2026-11-10',
+    notes: 'پاککەرەوەی گشتی ئەڵمانی بۆ ناوەوە، کوشن، و چەوری',
+  },
+  {
+    id: 'inv-3m-fastcut',
+    name: 'مەوادی پۆڵیش (3M Fast Cut Plus Extreme)',
+    category: 'واکس و پۆڵیش',
+    quantity: 4,
+    unit: 'بتڵ',
     minAlertLevel: 2,
     costPerUnit: 35000,
-    lastRestocked: '2026-10-05',
-    notes: 'بۆ پاککردنەوەی شوختی بۆیە',
+    lastRestocked: '2026-11-08',
+    notes: 'بۆ پاککردنەوەی شوختی بۆیە و نەهێشتنی پەڵە',
   },
   {
-    id: 'inv-4',
-    name: 'شامپۆی شۆردنی کوشن و فەرش (Upholstery Detergent)',
+    id: 'inv-active-foam',
+    name: 'شامپۆی کەفی چڕ (Active Snow Foam)',
     category: 'شامپۆ و کەف',
-    quantity: 25,
-    unit: 'لیتر',
-    minAlertLevel: 8,
-    costPerUnit: 5000,
-    lastRestocked: '2026-10-12',
-    notes: 'کەفی کەم، پاککردنەوەی خێرای پەڵە',
+    quantity: 40,
+    unit: 'گالۆن',
+    minAlertLevel: 10,
+    costPerUnit: 40000,
+    lastRestocked: '2026-11-05',
+    notes: 'شامپۆی کەفڕێژی سەرەکی غەسل',
   },
   {
-    id: 'inv-5',
-    name: 'ڕۆنی هایدرۆلیکی پەمپی فشاری بەرز',
-    category: 'ڕۆن و هایدرۆلیک',
-    quantity: 3,
-    unit: 'لیتر',
+    id: 'inv-microfiber',
+    name: 'خاولی مایکڕۆفایبەری وشککردنەوە',
+    category: 'پێداویستی تر',
+    quantity: 20,
+    unit: 'دانە',
     minAlertLevel: 5,
-    costPerUnit: 15000,
-    lastRestocked: '2026-09-20',
-    notes: '⚠️ کەم ماوە - پێویستی بە کڕین هەیە بۆ پەمپەکان',
+    costPerUnit: 5000,
+    lastRestocked: '2026-11-01',
+    notes: 'دەسماڵی ئەستووری وشککردنەوە بێ دروستکردنی شوخت',
   },
 ];
 

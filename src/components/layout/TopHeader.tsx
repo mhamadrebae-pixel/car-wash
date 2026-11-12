@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { formatIQD, normalizeDigits, calculateDaysSince, getSavedInventory, getSavedSettings, isDateToday } from '@/lib/storage';
 import { openWhatsAppChat, generateInactivityReminderMessage } from '@/lib/whatsapp';
-import { Vehicle, AuthUser } from '@/types';
+import { Vehicle, AuthUser, ParkingRecord } from '@/types';
 import { PlateDisplay } from '@/components/ui/PlateDisplay';
 import {
   DollarSign,
@@ -34,6 +34,7 @@ interface TopHeaderProps {
   onToggleMobileMenu?: () => void;
   carWashName?: string;
   vehicles?: Vehicle[];
+  parkingRecords?: ParkingRecord[];
   onOpenSettings?: () => void;
   onSelectVehicle?: (vehicle: Vehicle) => void;
   currentUser?: AuthUser | null;
@@ -59,6 +60,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   activeCarsInBay,
   onToggleMobileMenu,
   vehicles = [],
+  parkingRecords = [],
   onSelectVehicle,
   currentUser,
   onLogout,
@@ -127,15 +129,21 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const settings = getSavedSettings();
   const inventory = typeof window !== 'undefined' ? getSavedInventory() : [];
 
-  // Calculate today's revenue (for cashier role privacy - hiding all-time revenue)
+  // Calculate today's revenue (for cashier role privacy - including washes + garage parking)
   const todayRevenue = useMemo(() => {
-    return vehicles.reduce((acc, v) => {
+    const washToday = vehicles.reduce((acc, v) => {
       const vehicleToday = (v.washHistory || [])
         .filter((w) => isDateToday(w.date))
         .reduce((sum, w) => sum + (w.price || 0), 0);
       return acc + vehicleToday;
     }, 0);
-  }, [vehicles]);
+
+    const garageToday = (parkingRecords || [])
+      .filter((p) => p.paymentStatus === 'paid' && isDateToday(p.entryTime))
+      .reduce((sum, p) => sum + (Number(p.fee) || 0), 0);
+
+    return washToday + garageToday;
+  }, [vehicles, parkingRecords]);
 
   const rawNotifications: NotificationItem[] = [];
 
@@ -206,7 +214,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       id: `queue-status`,
       type: 'queue',
       title: `🚗 سەیارە لە ڕیزی چاوەڕوانیدایە`,
-      description: `لە ئێستادا ${queueCars.length} سەیارە لە نۆبەدان و چاوەڕوانی بەتاڵبوونی هۆڵی شۆردنن.`,
+      description: `لە ئێستادا ${queueCars.length} سەیارە لە نۆبەدان و لە ڕیزی چاوەڕوانیدان بۆ شۆردن.`,
       timeText: 'نۆبە',
       badge: `${queueCars.length} سەیارە`,
       badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -360,7 +368,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         {/* Active Bays Live Badge (Hidden on mobile < sm to save space, visible in bottom dock & dashboard) */}
         <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200 whitespace-nowrap shrink-0 shadow-xs">
           <Car className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-          <span className="text-blue-700 dark:text-blue-300 text-[11px] hidden md:inline">هۆڵەکان:</span>
+          <span className="text-blue-700 dark:text-blue-300 text-[11px] hidden md:inline">لە غەسلدا:</span>
           <strong className="text-blue-900 dark:text-blue-100 font-mono font-bold text-xs">
             {activeCarsInBay} <span className="hidden sm:inline">سەیارە</span>
           </strong>

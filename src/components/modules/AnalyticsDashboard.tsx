@@ -55,7 +55,6 @@ import {
   Activity,
   BarChart3,
   ArrowLeft,
-  Tv,
   Flame,
   CheckCheck,
   Gauge,

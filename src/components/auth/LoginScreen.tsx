@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Sparkles,
   Delete,
-  Tv,
   CheckCircle2,
   AlertTriangle,
   Crown,
@@ -154,15 +153,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ settings, onLoginSucce
           </div>
         </div>
 
-        <a
-          href="/tv"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-[11px] font-bold text-slate-300 hover:text-white transition shadow-xs"
-        >
-          <Tv className="w-3.5 h-3.5 text-blue-400" />
-          <span>شاشەی TV</span>
-        </a>
+
       </header>
 
       {/* Center Interactive Login Box */}

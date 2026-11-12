@@ -42,7 +42,7 @@ import { ExpensesModule } from '@/components/modules/ExpensesModule';
 import { InventoryModule } from '@/components/modules/InventoryModule';
 import { SystemDocsModule } from '@/components/modules/SystemDocsModule';
 import { SettingsModule } from '@/components/modules/SettingsModule';
-import { CheckCircle2, LayoutDashboard, Monitor, Car, Users, DollarSign, Settings, Tv, Layers, Wrench, Menu } from 'lucide-react';
+import { CheckCircle2, LayoutDashboard, Monitor, Car, Users, DollarSign, Settings, Layers, Wrench, Menu } from 'lucide-react';
 
 export default function MainPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('cashier');
@@ -295,6 +295,7 @@ export default function MainPage() {
           onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           carWashName={settings.carWashName}
           vehicles={vehicles}
+          parkingRecords={parkingRecords}
           currentUser={currentUser}
           onLogout={handleLogout}
           currentTheme={themeMode}
@@ -366,6 +367,7 @@ export default function MainPage() {
               services={services}
               staff={staff}
               settings={settings}
+              parkingRecords={parkingRecords}
               initialBay={selectedCashierBay}
               onUpdateVehicles={handleUpdateVehicles}
               onNotify={showNotification}

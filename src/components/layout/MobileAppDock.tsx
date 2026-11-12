@@ -13,7 +13,6 @@ import {
   Users,
   Wrench,
   Settings,
-  Tv,
   BookOpen,
   Smartphone,
   LogOut,
@@ -63,17 +62,10 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
   }[] = [
     {
       id: 'cashier',
-      label: 'هۆڵەکان',
+      label: 'کاشێر',
       icon: Monitor,
       badge: activeCarsInBay > 0 ? activeCarsInBay : undefined,
       badgeColor: 'bg-blue-600 text-white animate-pulse',
-    },
-    {
-      id: 'garage',
-      label: 'گەراج',
-      icon: Warehouse,
-      badge: parkedCarsCount > 0 ? parkedCarsCount : undefined,
-      badgeColor: 'bg-amber-600 text-white font-bold',
     },
     {
       id: 'vehicles',
@@ -83,16 +75,21 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
       badgeColor: 'bg-emerald-600 text-white',
     },
     {
+      id: 'analytics',
+      label: 'داشبۆرد',
+      icon: LayoutDashboard,
+    },
+    {
       id: 'expenses',
       label: 'خەرجی',
       icon: DollarSign,
     },
   ];
 
-  // Visible primary tabs (Both Admin and Cashier have direct access to Halls, Garage, Vehicles, Expenses)
+  // Visible primary tabs (Both Admin and Cashier have direct access)
   const visibleTabs =
     userRole === 'cashier'
-      ? primaryTabs.filter((t) => ['cashier', 'garage', 'vehicles', 'expenses'].includes(t.id))
+      ? primaryTabs.filter((t) => ['cashier', 'vehicles', 'expenses'].includes(t.id))
       : primaryTabs;
 
   const handleSelectTab = (tab: TabKey) => {
@@ -100,7 +97,7 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
     setIsMoreSheetOpen(false);
   };
 
-  const isMoreActive = ['staff', 'setup', 'docs', 'settings', 'analytics', 'inventory'].includes(activeTab);
+  const isMoreActive = ['staff', 'setup', 'docs', 'settings', 'inventory'].includes(activeTab);
 
   return (
     <>
@@ -310,23 +307,7 @@ export const MobileAppDock: React.FC<MobileAppDockProps> = ({
                 </div>
               </button>
 
-              {/* TV Screen Link */}
-              <Link
-                href="/tv"
-                target="_blank"
-                onClick={() => setIsMoreSheetOpen(false)}
-                className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 transition flex flex-col justify-between"
-              >
-                <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shadow-xs">
-                  <Tv className="w-4 h-4" />
-                </div>
-                <div className="mt-2.5">
-                  <span className="text-xs font-black block flex items-center gap-1">
-                    شاشەی TV ↗
-                  </span>
-                  <span className="text-[10px] text-slate-400">ژووری چاوەڕوانی کڕیار</span>
-                </div>
-              </Link>
+
 
               {/* Settings */}
               {userRole === 'admin' && (

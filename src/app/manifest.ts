@@ -36,17 +36,10 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: 'کاشێر و هۆڵەکان',
+        name: 'داشبۆردی کاشێر',
         short_name: 'کاشێر',
-        description: 'چوونە ناو هۆڵەکانی شۆردن و پسوولەی کاشێر',
+        description: 'تۆماری سەیارە و پسوولەی کاشێر',
         url: '/',
-        icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
-      },
-      {
-        name: 'شاشەی TV',
-        short_name: 'تیڤی',
-        description: 'شاشەی ژووری چاوەڕوانی کڕیاران',
-        url: '/tv',
         icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
       },
     ],

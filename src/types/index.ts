@@ -1,5 +1,17 @@
 export type PlateType = 'unified' | 'old';
 
+// Branch & Location Management (فرە لقی - Multi-Branch)
+export interface Branch {
+  id: string; // e.g. "branch-1", "branch-2"
+  name: string; // e.g. "لقی ١ (سەرەکی)", "لقی ٢"
+  code: string; // e.g. "B1", "B2"
+  address: string;
+  phone: string;
+  numberOfBays: number;
+  managerName?: string;
+  isMain?: boolean;
+}
+
 // User Authentication & Roles
 export type UserRole = 'admin' | 'cashier';
 
@@ -50,6 +62,7 @@ export interface Expense {
   notes?: string;
   isPettyCash?: boolean;
   paidTo?: string;
+  branchId?: string; // شوناسی لق (بۆ جیاکردنەوەی خەرجی لقی ١ و لقی ٢)
 }
 
 export type VehicleSize = 'sedan' | 'suv' | 'truck';
@@ -108,6 +121,17 @@ export interface VehicleDamageInspection {
   inspectedAt?: string;
 }
 
+export interface CarpetSpecs {
+  areaSquareMeters: number; // ڕووبەر بە مەتر دووجا (م²)
+  piecesCount: number; // ژمارەی فەرش یان پارچە
+  ratePerSquareMeter: number; // نرخی ١ مەتر دووجا (IQD)
+  length?: number; // درێژایی (مەتر)
+  width?: number; // پانی (مەتر)
+  carpetType?: string; // جۆری فەرش (ئاسایی، ئاوریشم، قەنەفە)
+  readyDate?: string; // بەرواری چاوەڕوانکراوی تەواوبوون
+  notes?: string;
+}
+
 export interface WashRecord {
   id: string;
   date: string;
@@ -131,6 +155,10 @@ export interface WashRecord {
   cafeItems?: SelectedCafeItem[];
   cafeTotal?: number;
   isSubscriptionWash?: boolean;
+  itemType?: 'car' | 'carpet';
+  carpetSpecs?: CarpetSpecs;
+  branchId?: string;
+  branchName?: string;
 }
 
 export interface DailyZReport {
@@ -138,6 +166,8 @@ export interface DailyZReport {
   date: string; // YYYY-MM-DD
   closedAt: string; // ISO
   closedBy: string;
+  branchId?: string;
+  branchName?: string;
   totalCars: number;
   cashTotal: number;
   fastpayTotal: number;
@@ -186,6 +216,7 @@ export interface Vehicle {
   registeredDate: string;
   status: 'active' | 'expired';
   currentBay?: number;
+  currentBayBranchId?: string; // شوناسی لقی ئەکتیڤ کە سەیارەکەی تێدایە لەناو هۆڵ
   bayEntryTime?: string; // ISO string when admitted to current bay
   washStage?: 'چاوەڕوانی' | 'کەفڕێژکردن' | 'شۆردنی دەرەوە' | 'ناوەوە و کوشن' | 'وشککردنەوە و پۆلیش' | 'تەواوبوو';
   assignedWorkerId?: string;
@@ -193,6 +224,10 @@ export interface Vehicle {
   damageInspection?: VehicleDamageInspection;
   subscription?: VipSubscription;
   reviews?: CustomerReview[];
+  itemType?: 'car' | 'carpet';
+  carpetSpecs?: CarpetSpecs;
+  branchId?: string;
+  branchName?: string;
   washHistory: WashRecord[];
 }
 
@@ -222,6 +257,7 @@ export interface StaffMember {
   startDate: string; // Date joined
   endDate?: string; // Date left if archived
   status: 'active' | 'archived';
+  branchId?: string; // شوناسی لقێک کە ئەم کارمەندەی لێ کاردەکات
   absentRecords: AbsentRecord[];
   deductions: StaffDeduction[];
 }
@@ -307,6 +343,11 @@ export interface AppSettings {
   garageDailyRate?: number; // نرخی وەستانی ڕۆژانە (نموونە: ١,٠٠٠ دینار)
   garageOvernightRate?: number; // نرخی وەستانی شەوانە (نموونە: ٣,٠٠٠ دینار)
   garageMonthlyRate?: number; // نرخی ئابوونەی مانگانەی گەراج (نموونە: ٢٥,٠٠٠ دینار)
+
+  // 11. Multi-Branch & Realtime Concurrency
+  branches?: Branch[]; // لیستی هەردوو لق (لقی ١، لقی ٢ یان زیاتر)
+  activeBranchId?: string; // شوناسی لقی ئەکتیڤ لەسەر ئەم ئامێرە
+  autoSyncIntervalMs?: number; // ماوەی پشکنینی خێرای سێرڤەر بۆ چەند ئامێر و کاشێر (نموونە: 1500ms)
 }
 
 // ==========================================

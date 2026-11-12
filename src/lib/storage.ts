@@ -360,7 +360,17 @@ export function getSavedInventory(): InventoryItem[] {
   }
   try {
     const parsed = JSON.parse(d);
-    return Array.isArray(parsed) ? parsed : defaultInventoryItems;
+    if (Array.isArray(parsed)) {
+      // Ensure Koch-Chemie Protector Wax (Pw) 1L is present at the top if missing
+      const hasKoch = parsed.some((item: any) => item?.name && item.name.toLowerCase().includes('koch'));
+      if (!hasKoch) {
+        const kochItem: InventoryItem = defaultInventoryItems[0];
+        parsed.unshift(kochItem);
+        localStorage.setItem(KEYS.INVENTORY, JSON.stringify(parsed));
+      }
+      return parsed;
+    }
+    return defaultInventoryItems;
   } catch {
     return defaultInventoryItems;
   }

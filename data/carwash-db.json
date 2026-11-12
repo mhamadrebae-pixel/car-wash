@@ -324,59 +324,59 @@
   },
   "inventory": [
     {
-      "id": "inv-1",
-      "name": "شامپۆی کەفی چڕ (Active Snow Foam)",
-      "category": "شامپۆ و کەف",
-      "quantity": 42.25,
-      "unit": "لیتر",
-      "minAlertLevel": 10,
-      "costPerUnit": 4000,
-      "lastRestocked": "2026-10-15",
-      "notes": "مارکەی ئیتالی بۆ پەمپی کەف"
-    },
-    {
-      "id": "inv-2",
-      "name": "واکسی درەوشێنەر و پارێزەر (Liquid Carnauba)",
-      "category": "واکس و پۆڵیش",
-      "quantity": 20,
-      "unit": "لیتر",
-      "minAlertLevel": 5,
-      "costPerUnit": 12000,
-      "lastRestocked": "2026-10-10",
-      "notes": "بۆ قۆناغی کۆتایی شۆردنی VIP"
-    },
-    {
-      "id": "inv-3",
-      "name": "مەوادی پۆڵیشی زبر و ورد (3M Fast Cut)",
+      "id": "inv-koch-pw",
+      "name": "Koch-Chemie Protector Wax (Pw) 1L",
       "category": "واکس و پۆڵیش",
       "quantity": 6,
-      "unit": "دانە",
+      "unit": "بتڵ",
+      "minAlertLevel": 2,
+      "costPerUnit": 28000,
+      "lastRestocked": "2026-11-12",
+      "notes": "واکسی پارێزەر و هایدرۆفۆبیکی ئەڵمانی بۆ درەوشانەوەی VIP"
+    },
+    {
+      "id": "inv-koch-gs",
+      "name": "Koch-Chemie Green Star (Gs) 1L",
+      "category": "شامپۆ و کەف",
+      "quantity": 10,
+      "unit": "بتڵ",
+      "minAlertLevel": 3,
+      "costPerUnit": 20000,
+      "lastRestocked": "2026-11-10",
+      "notes": "پاککەرەوەی گشتی ئەڵمانی بۆ ناوەوە، کوشن، و چەوری"
+    },
+    {
+      "id": "inv-3m-fastcut",
+      "name": "مەوادی پۆڵیش (3M Fast Cut Plus Extreme)",
+      "category": "واکس و پۆڵیش",
+      "quantity": 6,
+      "unit": "بتڵ",
       "minAlertLevel": 2,
       "costPerUnit": 35000,
-      "lastRestocked": "2026-10-05",
-      "notes": "بۆ پاککردنەوەی شوختی بۆیە"
-    },
-    {
-      "id": "inv-4",
-      "name": "شامپۆی شۆردنی کوشن و فەرش (Upholstery Detergent)",
-      "category": "شامپۆ و کەف",
-      "quantity": 22.25,
-      "unit": "لیتر",
-      "minAlertLevel": 8,
-      "costPerUnit": 5000,
-      "lastRestocked": "2026-10-12",
-      "notes": "کەفی کەم، پاککردنەوەی خێرای پەڵە"
-    },
-    {
-      "id": "inv-5",
-      "name": "ڕۆنی هایدرۆلیکی پەمپی فشاری بەرز",
-      "category": "ڕۆن و هایدرۆلیک",
-      "quantity": 8.1,
-      "unit": "لیتر",
-      "minAlertLevel": 5,
-      "costPerUnit": 15000,
       "lastRestocked": "2026-11-08",
-      "notes": "⚠️ کەم ماوە - پێویستی بە کڕین هەیە بۆ پەمپەکان"
+      "notes": "بۆ پاککردنەوەی شوختی بۆیە و نەهێشتنی پەڵە"
+    },
+    {
+      "id": "inv-active-foam",
+      "name": "شامپۆی کەفی چڕ (Active Snow Foam)",
+      "category": "شامپۆ و کەف",
+      "quantity": 40,
+      "unit": "گالۆن",
+      "minAlertLevel": 10,
+      "costPerUnit": 40000,
+      "lastRestocked": "2026-11-05",
+      "notes": "شامپۆی کەفڕێژی سەرەکی غەسل"
+    },
+    {
+      "id": "inv-microfiber",
+      "name": "خاولی مایکڕۆفایبەری وشککردنەوە",
+      "category": "پێداویستی تر",
+      "quantity": 20,
+      "unit": "دانە",
+      "minAlertLevel": 5,
+      "costPerUnit": 5000,
+      "lastRestocked": "2026-11-01",
+      "notes": "دەسماڵی ئەستووری وشککردنەوە بێ دروستکردنی شوخت"
     }
   ],
   "roadmap": [
@@ -594,6 +594,6 @@
       "carModel": "Chevrolet Malibu 2018"
     }
   ],
-  "lastUpdated": "2026-11-10T17:43:18.821Z",
+  "lastUpdated": "2026-11-12T12:20:27.460Z",
   "version": "2026-11-09-v1"
 }

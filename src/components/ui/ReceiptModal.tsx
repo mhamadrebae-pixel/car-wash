@@ -146,46 +146,109 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <p className="text-[10px] text-slate-500 pt-0.5 font-mono">بەروار: {receiptDate}</p>
             </div>
 
-            {/* Vehicle Plate in receipt */}
-            <div className="flex justify-center py-1">
-              <PlateDisplay plate={vehicle.plate} size="sm" />
-            </div>
+            {/* Vehicle Plate in receipt (or Carpet Header if carpet order) */}
+            {vehicle.itemType === 'carpet' || vehicle.carpetSpecs ? (
+              <div className="flex flex-col items-center justify-center p-2.5 bg-teal-50 border-2 border-dashed border-teal-400 rounded-xl my-1 text-teal-950">
+                <span className="text-xs font-black flex items-center gap-1.5">
+                  🧶 شوشتنگەی فەرش و مۆبیلیات
+                </span>
+                <span className="text-[10px] font-mono font-black mt-0.5 text-teal-800">
+                  تیکێتی وەرگرتنی فەرش: C-{vehicle.plate.number}
+                </span>
+              </div>
+            ) : (
+              <div className="flex justify-center py-1">
+                <PlateDisplay plate={vehicle.plate} size="sm" />
+              </div>
+            )}
 
-            {/* Vehicle & Customer Specs */}
-            <div className="space-y-1.5 text-[11px] border-b-2 border-dashed border-slate-300 pb-3 font-sans">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">ئۆتۆمبێل:</span>
-                <span className="font-bold text-slate-950">{vehicle.carModel} ({vehicle.color})</span>
+            {/* Vehicle / Carpet & Customer Specs */}
+            {vehicle.itemType === 'carpet' || vehicle.carpetSpecs ? (
+              <div className="space-y-1.5 text-[11px] border-b-2 border-dashed border-slate-300 pb-3 font-sans">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">جۆری خزمەتگوزاری:</span>
+                  <span className="font-bold text-slate-950">{vehicle.color || 'شۆردنی فەرش'}</span>
+                </div>
+                {vehicle.carpetSpecs?.areaSquareMeters ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">ڕووبەر:</span>
+                    <span className="font-bold text-slate-950 font-mono">
+                      {vehicle.carpetSpecs.areaSquareMeters} مەتر دووجا (م²)
+                      {vehicle.carpetSpecs.length && vehicle.carpetSpecs.width ? ` (${vehicle.carpetSpecs.length}م × ${vehicle.carpetSpecs.width}م)` : ''}
+                    </span>
+                  </div>
+                ) : null}
+                {vehicle.carpetSpecs?.piecesCount ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">ژمارەی فەرش / پارچە:</span>
+                    <span className="font-bold text-slate-950">{vehicle.carpetSpecs.piecesCount} دانە</span>
+                  </div>
+                ) : null}
+                {vehicle.carpetSpecs?.ratePerSquareMeter ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">نرخی هەر مەترێک:</span>
+                    <span className="font-bold text-slate-950 font-mono">{formatIQD(vehicle.carpetSpecs.ratePerSquareMeter)}</span>
+                  </div>
+                ) : null}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">کڕیار:</span>
+                  <span className="font-bold text-slate-950">{vehicle.ownerName}</span>
+                </div>
+                {vehicle.phone && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">مۆبایل:</span>
+                    <span className="font-bold text-slate-950 font-mono">{vehicle.phone}</span>
+                  </div>
+                )}
+                {vehicle.carpetSpecs?.readyDate && (
+                  <div className="flex justify-between items-center bg-teal-50 text-teal-900 px-2 py-1 rounded-lg border border-teal-200 font-bold">
+                    <span>کاتی ئامادەبوون بۆ وەرگرتنەوە:</span>
+                    <span className="font-mono">{vehicle.carpetSpecs.readyDate}</span>
+                  </div>
+                )}
+                {settings.showStaffOnReceipt !== false && staffName && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">وەستای بەرپرس:</span>
+                    <span className="font-bold text-slate-950">{staffName}</span>
+                  </div>
+                )}
               </div>
-              {vehicle.size && (
+            ) : (
+              <div className="space-y-1.5 text-[11px] border-b-2 border-dashed border-slate-300 pb-3 font-sans">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">قەبارەی سەیارە:</span>
-                  <span className="font-bold text-slate-900">
-                    {vehicle.size === 'suv'
-                      ? 'جیپ (SUV / 4x4)'
-                      : vehicle.size === 'truck'
-                      ? 'بارهەڵگر / پیکاب'
-                      : 'سالۆن (بچووک)'}
-                  </span>
+                  <span className="text-slate-600">ئۆتۆمبێل:</span>
+                  <span className="font-bold text-slate-950">{vehicle.carModel} ({vehicle.color})</span>
                 </div>
-              )}
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">خاوەن:</span>
-                <span className="font-bold text-slate-950">{vehicle.ownerName}</span>
+                {vehicle.size && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">قەبارەی سەیارە:</span>
+                    <span className="font-bold text-slate-900">
+                      {vehicle.size === 'suv'
+                        ? 'جیپ (SUV / 4x4)'
+                        : vehicle.size === 'truck'
+                        ? 'بارهەڵگر / پیکاب'
+                        : 'سالۆن (بچووک)'}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">خاوەن:</span>
+                  <span className="font-bold text-slate-950">{vehicle.ownerName}</span>
+                </div>
+                {vehicle.phone && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">مۆبایل:</span>
+                    <span className="font-bold text-slate-950 font-mono">{vehicle.phone}</span>
+                  </div>
+                )}
+                {settings.showStaffOnReceipt !== false && staffName && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">وەستای بەرپرس:</span>
+                    <span className="font-bold text-slate-950">{staffName}</span>
+                  </div>
+                )}
               </div>
-              {vehicle.phone && (
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">مۆبایل:</span>
-                  <span className="font-bold text-slate-950 font-mono">{vehicle.phone}</span>
-                </div>
-              )}
-              {settings.showStaffOnReceipt !== false && staffName && (
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">وەستای بەرپرس:</span>
-                  <span className="font-bold text-slate-950">{staffName}</span>
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Service & Price */}
             <div className="space-y-1.5 text-xs border-b-2 border-dashed border-slate-300 pb-3 font-sans">

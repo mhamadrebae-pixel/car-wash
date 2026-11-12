@@ -12,7 +12,6 @@ import {
   DollarSign,
   BookOpen,
   Settings,
-  Tv,
   Sparkles,
   ShieldCheck,
   Target,
@@ -158,17 +157,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }[] = [
     {
       id: 'cashier',
-      label: 'شۆردنی سەیارەکان (هۆڵەکان)',
+      label: 'کاشێر و فرۆشتن',
       icon: Monitor,
-      badge: activeCarsCount > 0 ? activeCarsCount : 4,
+      badge: activeCarsCount > 0 ? activeCarsCount : undefined,
       badgeColor: 'bg-blue-100 text-blue-700 border border-blue-200/60',
-    },
-    {
-      id: 'garage',
-      label: 'گەراج و پارکیک (Garage)',
-      icon: Warehouse,
-      badge: parkedCarsCount > 0 ? `${parkedCarsCount} ئۆتۆمبێل` : undefined,
-      badgeColor: 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60',
     },
     {
       id: 'vehicles',
@@ -186,13 +178,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'staff',
       label: 'وەستاکان و کاتی دەوام',
       icon: Users,
-    },
-    {
-      id: 'setup',
-      label: 'کەرەستەی کڕدراو (CapEx)',
-      icon: Wrench,
-      badge: setupCount,
-      badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60',
     },
     {
       id: 'expenses',
@@ -218,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  const cashierAllowedTabs: TabKey[] = ['cashier', 'garage', 'vehicles', 'docs'];
+  const cashierAllowedTabs: TabKey[] = ['cashier', 'vehicles', 'docs'];
   const visibleMenuItems =
     userRole === 'cashier'
       ? menuItems.filter((item) => cashierAllowedTabs.includes(item.id))
@@ -557,22 +542,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           )}
 
-          {/* Quick TV screen link */}
-          {!isCollapsed && (
-            <Link
-              href="/tv"
-              target="_blank"
-              className="w-full py-1.5 px-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-[11px] font-bold flex items-center justify-between border border-slate-200/80 dark:border-slate-700 shadow-xs transition group"
-            >
-              <div className="flex items-center gap-1.5">
-                <Tv className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
-                <span className="text-[10px]">شاشەی چاوەڕوانی (TV)</span>
-              </div>
-              <span className="text-[9px] text-purple-600 dark:text-purple-400 font-mono bg-purple-50 dark:bg-purple-950/60 px-1 py-0.5 rounded border border-purple-100 dark:border-purple-800">
-                /tv ↗
-              </span>
-            </Link>
-          )}
+
 
           {/* Theme Toggle (Dark / Light Mode) */}
           {onToggleTheme && (

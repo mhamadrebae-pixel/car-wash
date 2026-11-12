@@ -498,6 +498,27 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
         </div>
       </div>
 
+      {/* QUICK MOBILE ACTION CALLOUT BANNER */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 text-white p-3.5 rounded-2xl shadow-md flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+            <ShoppingCart className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <span className="font-black text-xs sm:text-sm block">کڕینی کەرەستە و مەوادی نوێ</span>
+            <span className="text-[11px] text-blue-100 block">وەک Koch-Chemie Pw 1L، شامپۆ، واکس...</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={openAddModal}
+          className="py-2 px-3.5 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-black text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer shrink-0"
+        >
+          <Plus className="w-4 h-4 text-blue-700" />
+          <span>+ کڕینی نوێ</span>
+        </button>
+      </div>
+
       {/* 3. INVENTORY ITEMS LIST */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredItems.length === 0 ? (
@@ -649,10 +670,10 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenRestock(item)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 active:scale-95 transition cursor-pointer"
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 active:scale-95 transition cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>کڕینەوە و پڕکردنەوە (+Stock)</span>
+                    <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+                    <span>+ کڕینەوە (+Stock)</span>
                   </button>
 
                   <button
@@ -1082,6 +1103,16 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
           </div>
         </div>
       )}
+
+      {/* MOBILE FLOATING ACTION BUTTON (ALWAYS VISIBLE OVER MOBILE SCROLL) */}
+      <button
+        type="button"
+        onClick={openAddModal}
+        className="fixed bottom-20 left-4 z-40 sm:hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white py-2.5 px-4 rounded-full shadow-2xl flex items-center gap-2 font-black text-xs active:scale-95 transition border-2 border-white/30 cursor-pointer"
+      >
+        <Plus className="w-4 h-4 text-white" />
+        <span>+ کڕینی مەواد</span>
+      </button>
     </div>
   );
 };

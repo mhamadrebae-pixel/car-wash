@@ -141,9 +141,9 @@ export const SystemDocsModule: React.FC = () => {
           </div>
 
           <div className="p-4 bg-slate-50/70 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700 rounded-2xl space-y-2">
-            <span className="font-bold text-slate-900 dark:text-white block">٤. شاشەی تەلەفزیۆن (/tv) و پسوولەی کاشێر</span>
+            <span className="font-bold text-slate-900 dark:text-white block">٤. بڕینی پسوولەی کاشێر و پرینتەر</span>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-              شاشەی ژووری دانیشتن بۆ نیشاندانی قۆناغی سەیارەکان بە قەبارەی گەورە لەگەڵ پرینتی پسوولەی 80mm.
+              سیستەمی پرینتی پسوولەی گەرمی 80mm لەگەڵ شێوازی فەرمیی تابلۆی کوردستان و زانیاری کڕیار.
             </p>
           </div>
 

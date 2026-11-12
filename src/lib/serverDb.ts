@@ -116,7 +116,11 @@ function readLocalDatabase(): DatabasePayload {
       staff: Array.isArray(parsed.staff) ? parsed.staff : defaultStaffMembers,
       services: Array.isArray(parsed.services) ? parsed.services : defaultServices,
       settings: parsed.settings || defaultSettings,
-      inventory: Array.isArray(parsed.inventory) ? parsed.inventory : defaultInventoryItems,
+      inventory: Array.isArray(parsed.inventory)
+        ? (parsed.inventory.some((i: any) => i?.name && i.name.toLowerCase().includes('koch'))
+            ? parsed.inventory
+            : [defaultInventoryItems[0], ...parsed.inventory])
+        : defaultInventoryItems,
       roadmap: Array.isArray(parsed.roadmap) ? parsed.roadmap : defaultRoadmapItems,
       cafeItems: Array.isArray(parsed.cafeItems) ? parsed.cafeItems : defaultCafeItems,
       zreports: Array.isArray(parsed.zreports) ? parsed.zreports : [],
