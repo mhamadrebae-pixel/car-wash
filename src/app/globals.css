@@ -148,6 +148,25 @@ html.dark body {
   color: #F8FAFC !important;
 }
 
+/* slate-900 used as card/panel bg in dark mode → same as bg-white in dark */
+.dark .bg-slate-900:not(.license-plate *):not([data-plate="true"] *) {
+  background-color: #111A2E !important;
+  color: #F8FAFC !important;
+}
+
+/* slate-800 used as secondary panels, tab bars, input backgrounds */
+.dark .bg-slate-800:not(.license-plate *):not([data-plate="true"] *),
+.dark .bg-slate-800\/80:not(.license-plate *):not([data-plate="true"] *) {
+  background-color: #162238 !important;
+  color: #F8FAFC !important;
+}
+
+/* slate-700 used as active tab, active pill, selected states */
+.dark .bg-slate-700:not(.license-plate *):not([data-plate="true"] *) {
+  background-color: #1E2D48 !important;
+  color: #FFFFFF !important;
+}
+
 /* Sub-card backgrounds, secondary panels and inactive pills */
 .dark .bg-\[\#F8FAFC\]:not(.license-plate *):not([data-plate="true"] *),
 .dark .bg-\[\#F1F3F7\]:not(.license-plate *):not([data-plate="true"] *),
