@@ -32,23 +32,13 @@ export function getDaysAgoDateStr(days: number): string {
 export const defaultBranches: Branch[] = [
   {
     id: 'branch-1',
-    name: 'لقی ١ (سەرەکی)',
+    name: 'غەسلی دەریا',
     code: 'B1',
-    address: 'سلێمانی - شەقامی بازنەیی مەلیک مەحمود',
+    address: 'سلێمانی',
     phone: '0770 123 4567',
     numberOfBays: 3,
     managerName: 'وەستا ڕێبوار عەلی',
     isMain: true,
-  },
-  {
-    id: 'branch-2',
-    name: 'لقی ٢',
-    code: 'B2',
-    address: 'سلێمانی - ڕاپەڕین بەرامبەر زانکۆ',
-    phone: '0750 987 6543',
-    numberOfBays: 2,
-    managerName: 'وەستا ئاراس مەحمود',
-    isMain: false,
   },
 ];
 
@@ -434,11 +424,11 @@ export const defaultServices: ServiceItem[] = [
     name: 'شۆردنی ئاسایی (دەرەوە + ناوەوە)',
     category: 'سەیارە',
     unit: 'سەیارە',
-    price: 10000,
+    price: 5000,
     pricesBySize: {
-      sedan: 10000,
-      suv: 13000,
-      truck: 15000,
+      sedan: 5000,
+      suv: 8000,
+      truck: 10000,
     },
     description: 'کەفی چڕ، شۆردنی دەرەوە بە فشاری بەرز، ناوەوە بە گسک، پاککردنەوەی جام',
     durationMinutes: 25,

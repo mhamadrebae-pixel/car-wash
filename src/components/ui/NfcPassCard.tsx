@@ -68,7 +68,7 @@ export const NfcPassCard: React.FC<NfcPassCardProps> = ({
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const carWashName = settings?.carWashName || 'Royal Car Wash';
+  const carWashName = settings?.carWashName || 'غەسلی دەریا';
   const portalUrl = `${getPortalBaseUrl(settings)}/nfc/${vehicle.id}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(portalUrl)}&margin=1`;
 

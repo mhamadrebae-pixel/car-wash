@@ -17,6 +17,9 @@ import {
   CafeItem,
   ParkingRecord,
   Branch,
+  LotteryTicket,
+  LotteryDraw,
+  LotterySettings,
 } from '@/types';
 import {
   defaultSetupItems,
@@ -49,6 +52,9 @@ export const KEYS = {
   BRANCHES: 'carwash_v1_branches',
   ACTIVE_BRANCH: 'carwash_v1_active_branch',
   LAST_SYNC_TS: 'carwash_v1_last_sync_ts',
+  LOTTERY_TICKETS: 'carwash_v1_lottery_tickets',
+  LOTTERY_DRAWS: 'carwash_v1_lottery_draws',
+  LOTTERY_SETTINGS: 'carwash_v1_lottery_settings',
 };
 
 // Cross-tab instantaneous Realtime BroadcastChannel
@@ -1248,3 +1254,180 @@ export async function fetchVehicleFromServer(id: string): Promise<{ vehicle: Veh
 
 
 
+
+// ==========================================
+// Lottery & Raffle System Storage
+// ==========================================
+
+export function getSavedLotteryTickets(): LotteryTicket[] {
+  try {
+    const d = localStorage.getItem(KEYS.LOTTERY_TICKETS);
+    if (!d) return [];
+    return JSON.parse(d) as LotteryTicket[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLotteryTickets(tickets: LotteryTicket[]): void {
+  safeStorageSet(KEYS.LOTTERY_TICKETS, JSON.stringify(tickets));
+  broadcastLocalChange(KEYS.LOTTERY_TICKETS);
+}
+
+export function getSavedLotteryDraws(): LotteryDraw[] {
+  try {
+    const d = localStorage.getItem(KEYS.LOTTERY_DRAWS);
+    if (!d) return [];
+    return JSON.parse(d) as LotteryDraw[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLotteryDraws(draws: LotteryDraw[]): void {
+  safeStorageSet(KEYS.LOTTERY_DRAWS, JSON.stringify(draws));
+  broadcastLocalChange(KEYS.LOTTERY_DRAWS);
+}
+
+export function getLotterySettings(): LotterySettings {
+  try {
+    const d = localStorage.getItem(KEYS.LOTTERY_SETTINGS);
+    if (!d) return getDefaultLotterySettings();
+    return JSON.parse(d) as LotterySettings;
+  } catch {
+    return getDefaultLotterySettings();
+  }
+}
+
+export function saveLotterySettings(settings: LotterySettings): void {
+  safeStorageSet(KEYS.LOTTERY_SETTINGS, JSON.stringify(settings));
+}
+
+function getDefaultLotterySettings(): LotterySettings {
+  return {
+    enabled: true,
+    prizes: [
+      {
+        id: 'prize-1',
+        rank: 1,
+        label: 'خەڵاتی یەکەم 🥇',
+        type: 'free_wash',
+        value: 1,
+        description: 'شوردنی خاوەن (ئازاد)',
+      },
+      {
+        id: 'prize-2',
+        rank: 2,
+        label: 'خەڵاتی دووەم 🥈',
+        type: 'cash',
+        value: 25000,
+        description: '٢٥,٠٠٠ دینار پارەی کاش',
+      },
+      {
+        id: 'prize-3',
+        rank: 3,
+        label: 'خەڵاتی سێیەم 🥉',
+        type: 'discount',
+        value: 50,
+        description: '٥٠٪ داشکاندن لە شوردنی داهاتوو',
+      },
+    ],
+    autoDrawDay: 28,
+    welcomeMessage: 'مەرحەبا! تکتی تیرو پشکی تۆ تۆمار کرا 🎟️',
+  };
+}
+
+/** Issue a single lottery ticket when a vehicle is washed.
+ *  Returns the new ticket (or null if lottery disabled). */
+export function issueLotteryTicket(params: {
+  washId: string;
+  customerId: string;
+  customerName?: string;
+  phone?: string;
+  plate?: string;
+  branchId?: string;
+}): LotteryTicket | null {
+  const settings = getLotterySettings();
+  if (!settings.enabled) return null;
+
+  const tickets = getSavedLotteryTickets();
+  const now = new Date();
+  const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // sequential ticket number per period
+  const periodTickets = tickets.filter((t) => t.drawPeriod === period);
+  const ticketNumber = periodTickets.length + 1;
+
+  const ticket: LotteryTicket = {
+    id: `ticket-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    customerId: params.customerId,
+    customerName: params.customerName,
+    phone: params.phone,
+    plate: params.plate,
+    washId: params.washId,
+    ticketNumber,
+    drawPeriod: period,
+    branchId: params.branchId,
+    createdAt: now.toISOString(),
+  };
+
+  saveLotteryTickets([...tickets, ticket]);
+  return ticket;
+}
+
+/** Perform the monthly lottery draw. Returns the updated LotteryDraw. */
+export function conductLotteryDraw(params: {
+  period: string;
+  prizes: LotteryDraw['prizes'];
+  drawnBy?: string;
+  notes?: string;
+}): LotteryDraw {
+  const tickets = getSavedLotteryTickets().filter(
+    (t) => t.drawPeriod === params.period
+  );
+
+  // Shuffle tickets (Fisher-Yates)
+  const shuffled = [...tickets];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  const winners: LotteryDraw['winners'] = [];
+  const usedCustomers = new Set<string>();
+
+  for (const prize of params.prizes.sort((a, b) => a.rank - b.rank)) {
+    // Pick first ticket whose customer hasn't won yet
+    const winner = shuffled.find((t) => !usedCustomers.has(t.customerId));
+    if (!winner) break;
+    usedCustomers.add(winner.customerId);
+    winners.push({
+      ticketId: winner.id,
+      ticketNumber: winner.ticketNumber,
+      customerId: winner.customerId,
+      customerName: winner.customerName,
+      phone: winner.phone,
+      plate: winner.plate,
+      prizeId: prize.id,
+      prizeLabel: prize.label,
+      prizeDescription: prize.description,
+      claimed: false,
+    });
+  }
+
+  const draw: LotteryDraw = {
+    id: `draw-${params.period}-${Date.now()}`,
+    period: params.period,
+    drawDate: new Date().toISOString(),
+    status: 'drawn',
+    totalTickets: tickets.length,
+    prizes: params.prizes,
+    winners,
+    drawnBy: params.drawnBy,
+    notes: params.notes,
+  };
+
+  const draws = getSavedLotteryDraws().filter((d) => d.period !== params.period);
+  saveLotteryDraws([...draws, draw]);
+  return draw;
+}

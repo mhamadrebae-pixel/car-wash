@@ -1,6 +1,55 @@
 {
   "vehicles": [
     {
+      "id": "v-1795519270313",
+      "plate": {
+        "type": "unified",
+        "provinceCode": "21",
+        "provinceName": "سلێمانی",
+        "letter": "A",
+        "number": "53457"
+      },
+      "ownerName": "ژوهژا",
+      "phone": "00400558",
+      "carModel": "دوسا",
+      "color": "دوسا",
+      "size": "sedan",
+      "nfcTagId": "NFC-270313",
+      "hasNfcSticker": true,
+      "assignedWorkerId": "staff-1",
+      "assignedWorkerName": "وەستا ڕێبوار عەلی",
+      "totalWashes": 1,
+      "currentCycleWashes": 1,
+      "freeWashesClaimed": 0,
+      "lastVisitDate": "2026-11-24T11:21:10.313Z",
+      "registeredDate": "2026-11-24T11:21:10.313Z",
+      "status": "active",
+      "washStage": "چاوەڕوانی",
+      "bayEntryTime": "2026-11-24T11:21:10.313Z",
+      "branchId": "branch-2",
+      "branchName": "غەسلی دەریا",
+      "washHistory": [
+        {
+          "id": "w-1795519270313",
+          "date": "2026-11-24T11:21:10.313Z",
+          "serviceId": "srv-1",
+          "serviceName": "شۆردنی ئاسایی (دەرەوە + ناوەوە)",
+          "price": 10000,
+          "isFree": false,
+          "vehicleSize": "sedan",
+          "staffId": "staff-1",
+          "staffName": "وەستا ڕێبوار عەلی",
+          "paymentMethod": "cash",
+          "paymentStatus": "paid",
+          "workerCommission": 2000,
+          "isSubscriptionWash": false,
+          "branchId": "branch-2",
+          "branchName": "غەسلی دەریا"
+        }
+      ],
+      "updatedAt": "2026-11-24T11:21:16.742Z"
+    },
+    {
       "id": "v-1794332568290",
       "plate": {
         "type": "unified",
@@ -37,9 +86,14 @@
           "paymentMethod": "cash",
           "paymentStatus": "paid",
           "workerCommission": 2000,
-          "isSubscriptionWash": false
+          "isSubscriptionWash": false,
+          "branchId": "branch-1",
+          "branchName": "غەسلی دەریا"
         }
-      ]
+      ],
+      "branchId": "branch-1",
+      "branchName": "غەسلی دەریا",
+      "updatedAt": "2026-11-24T11:21:16.742Z"
     },
     {
       "id": "v-1794328664612",
@@ -57,13 +111,47 @@
       "size": "sedan",
       "nfcTagId": "NFC-664612",
       "hasNfcSticker": true,
-      "totalWashes": 2,
-      "currentCycleWashes": 2,
+      "totalWashes": 4,
+      "currentCycleWashes": 4,
       "freeWashesClaimed": 0,
-      "lastVisitDate": "2026-11-10T16:37:58.074Z",
+      "lastVisitDate": "2026-11-24T11:22:46.837Z",
       "registeredDate": "2026-11-10T16:37:44.612Z",
       "status": "active",
       "washHistory": [
+        {
+          "id": "w-1795519366837",
+          "date": "2026-11-24T11:22:46.837Z",
+          "serviceId": "srv-1",
+          "serviceName": "شۆردنی ئاسایی (دەرەوە + ناوەوە)",
+          "price": 10000,
+          "isFree": false,
+          "vehicleSize": "sedan",
+          "staffId": "staff-1",
+          "staffName": "وەستا ڕێبوار عەلی",
+          "bayNumber": 1,
+          "paymentMethod": "cash",
+          "paymentStatus": "paid",
+          "workerCommission": 2000,
+          "isSubscriptionWash": false
+        },
+        {
+          "id": "w-1795519320935",
+          "date": "2026-11-24T11:22:00.935Z",
+          "serviceId": "srv-1",
+          "serviceName": "شۆردنی ئاسایی (دەرەوە + ناوەوە)",
+          "price": 10000,
+          "isFree": false,
+          "vehicleSize": "sedan",
+          "staffId": "staff-1",
+          "staffName": "وەستا ڕێبوار عەلی",
+          "bayNumber": 1,
+          "paymentMethod": "cash",
+          "paymentStatus": "unpaid",
+          "workerCommission": 2000,
+          "isSubscriptionWash": false,
+          "branchId": "branch-2",
+          "branchName": "غەسلی دەریا"
+        },
         {
           "id": "w-1794328678074",
           "date": "2026-11-10T16:37:58.074Z",
@@ -78,7 +166,9 @@
           "paymentMethod": "cash",
           "paymentStatus": "paid",
           "workerCommission": 2000,
-          "isSubscriptionWash": false
+          "isSubscriptionWash": false,
+          "branchId": "branch-1",
+          "branchName": "غەسلی دەریا"
         },
         {
           "id": "w-1794328664612",
@@ -94,9 +184,19 @@
           "paymentMethod": "cash",
           "paymentStatus": "paid",
           "workerCommission": 2000,
-          "isSubscriptionWash": false
+          "isSubscriptionWash": false,
+          "branchId": "branch-1",
+          "branchName": "غەسلی دەریا"
         }
-      ]
+      ],
+      "branchId": "branch-2",
+      "branchName": "غەسلی دەریا",
+      "updatedAt": "2026-11-24T11:21:16.742Z",
+      "currentBay": 1,
+      "assignedWorkerId": "staff-1",
+      "assignedWorkerName": "وەستا ڕێبوار عەلی",
+      "washStage": "کەفڕێژکردن",
+      "bayEntryTime": "2026-11-24T11:22:00.935Z"
     },
     {
       "id": "v-1794499010232",
@@ -123,7 +223,7 @@
       "washStage": "تەواوبوو",
       "bayEntryTime": "2026-11-12T16:09:00.649Z",
       "branchId": "branch-1",
-      "branchName": "لقی ١",
+      "branchName": "غەسلی دەریا",
       "washHistory": [
         {
           "id": "w-1794499010232",
@@ -140,9 +240,10 @@
           "workerCommission": 2000,
           "isSubscriptionWash": false,
           "branchId": "branch-1",
-          "branchName": "لقی ١"
+          "branchName": "غەسلی دەریا"
         }
-      ]
+      ],
+      "updatedAt": "2026-11-24T11:21:16.742Z"
     },
     {
       "id": "v-1794499732665",
@@ -169,7 +270,7 @@
       "washStage": "تەواوبوو",
       "bayEntryTime": "2026-11-12T16:09:04.345Z",
       "branchId": "branch-1",
-      "branchName": "لقی ١",
+      "branchName": "غەسلی دەریا",
       "washHistory": [
         {
           "id": "w-1794499732665",
@@ -186,9 +287,10 @@
           "workerCommission": 2000,
           "isSubscriptionWash": false,
           "branchId": "branch-1",
-          "branchName": "لقی ١"
+          "branchName": "غەسلی دەریا"
         }
-      ]
+      ],
+      "updatedAt": "2026-11-24T11:21:16.742Z"
     },
     {
       "id": "v-1794499897056",
@@ -215,7 +317,7 @@
       "washStage": "تەواوبوو",
       "bayEntryTime": "2026-11-12T16:12:12.720Z",
       "branchId": "branch-1",
-      "branchName": "لقی ١",
+      "branchName": "غەسلی دەریا",
       "washHistory": [
         {
           "id": "w-1794499897056",
@@ -232,9 +334,10 @@
           "workerCommission": 2000,
           "isSubscriptionWash": false,
           "branchId": "branch-1",
-          "branchName": "لقی ١"
+          "branchName": "غەسلی دەریا"
         }
-      ]
+      ],
+      "updatedAt": "2026-11-24T11:21:16.742Z"
     }
   ],
   "expenses": [
@@ -472,26 +575,16 @@
     "branches": [
       {
         "id": "branch-1",
-        "name": "لقی ١ (سەرەکی)",
+        "name": "غەسلی دەریا",
         "code": "B1",
-        "address": "سلێمانی - شەقامی بازنەیی مەلیک مەحمود",
+        "address": "سلێمانی",
         "phone": "0770 123 4567",
         "numberOfBays": 3,
         "managerName": "وەستا ڕێبوار عەلی",
         "isMain": true
-      },
-      {
-        "id": "branch-2",
-        "name": "لقی ٢",
-        "code": "B2",
-        "address": "سلێمانی - ڕاپەڕین بەرامبەر زانکۆ",
-        "phone": "0750 987 6543",
-        "numberOfBays": 2,
-        "managerName": "وەستا ئاراس مەحمود",
-        "isMain": false
       }
     ],
-    "activeBranchId": "branch-2",
+    "activeBranchId": "branch-1",
     "autoSyncIntervalMs": 1500
   },
   "inventory": [
@@ -510,7 +603,7 @@
       "id": "inv-koch-gs",
       "name": "Koch-Chemie Green Star (Gs) 1L",
       "category": "شامپۆ و کەف",
-      "quantity": 10,
+      "quantity": 9.75,
       "unit": "بتڵ",
       "minAlertLevel": 3,
       "costPerUnit": 20000,
@@ -532,7 +625,7 @@
       "id": "inv-active-foam",
       "name": "شامپۆی کەفی چڕ (Active Snow Foam)",
       "category": "شامپۆ و کەف",
-      "quantity": 40,
+      "quantity": 39.75,
       "unit": "گالۆن",
       "minAlertLevel": 10,
       "costPerUnit": 40000,
@@ -766,6 +859,6 @@
       "carModel": "Chevrolet Malibu 2018"
     }
   ],
-  "lastUpdated": "2026-11-12T16:18:03.163Z",
+  "lastUpdated": "2026-11-24T11:24:07.521Z",
   "version": "2026-production-v1"
 }

@@ -35,6 +35,7 @@ import {
   Moon,
   PackageCheck,
   Warehouse,
+  Trophy,
 } from 'lucide-react';
 import { AuthUser, Branch } from '@/types';
 
@@ -48,7 +49,8 @@ export type TabKey =
   | 'setup'
   | 'expenses'
   | 'docs'
-  | 'settings';
+  | 'settings'
+  | 'lottery';
 
 export type AnalyticsSectionKey =
   | 'overview'
@@ -201,6 +203,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'docs',
       label: 'نەخشەی کار و ڕێنمایی',
       icon: BookOpen,
+    },
+    {
+      id: 'lottery',
+      label: 'تیرو پشک 🎟️',
+      icon: Trophy,
+      badgeColor: 'bg-purple-100 text-purple-700 border border-purple-200/60',
     },
     {
       id: 'settings',

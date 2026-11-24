@@ -1259,7 +1259,7 @@ export const StaffModule: React.FC<StaffModuleProps> = ({
               {/* Header */}
               <div className="text-center border-b-2 border-dashed border-slate-300 pb-3">
                 <h3 className="font-black text-base text-slate-900">
-                  {settings?.carWashName || 'غەسلی شاژنی ئۆتۆمبێل (Royal Car Wash)'}
+                  {settings?.carWashName || 'غەسلی دەریا (Darya Car Wash)'}
                 </h3>
                 <p className="text-[11px] text-slate-500 font-bold mt-0.5">پسوولەی وەرگرتنی مووچە و عەمولەی کارمەند</p>
                 <div className="text-[10px] text-slate-400 font-mono mt-1">

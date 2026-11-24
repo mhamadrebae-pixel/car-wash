@@ -363,6 +363,70 @@ export interface AppSettings {
   branches?: Branch[]; // لیستی هەردوو لق (لقی ١، لقی ٢ یان زیاتر)
   activeBranchId?: string; // شوناسی لقی ئەکتیڤ لەسەر ئەم ئامێرە
   autoSyncIntervalMs?: number; // ماوەی پشکنینی خێرای سێرڤەر بۆ چەند ئامێر و کاشێر (نموونە: 1500ms)
+
+  // 12. Carpet Laundry Module Activation
+  enableCarpetLaundry?: boolean; // چالاککردنی بەشی فەرش و مۆبیلیات (بە پێشفرەز ناچالاک و شاردراوەیە)
+}
+
+// ==========================================
+// Lottery & Raffle System Types
+// ==========================================
+
+export interface LotteryTicket {
+  id: string;
+  customerId: string; // plate string or phone as unique customer key
+  customerName?: string;
+  phone?: string;
+  plate?: string; // formatted plate display string
+  washId: string; // which wash record generated this ticket
+  ticketNumber: number; // sequential e.g. 1, 2, 3
+  drawPeriod: string; // e.g. "2026-11" (YYYY-MM)
+  branchId?: string;
+  createdAt: string; // ISO
+}
+
+export type LotteryPrizeType = 'free_wash' | 'cash' | 'discount' | 'custom';
+
+export interface LotteryPrize {
+  id: string;
+  rank: number; // 1st, 2nd, 3rd place
+  label: string; // e.g. "خەڵاتی یەکەم"
+  type: LotteryPrizeType;
+  value: number; // IQD for cash, percent for discount, 1 for free wash
+  description?: string; // e.g. "شوردنی خاوەن"
+}
+
+export interface LotteryDraw {
+  id: string;
+  period: string; // e.g. "2026-11"
+  drawDate: string; // ISO - when the draw happened
+  status: 'upcoming' | 'drawn' | 'closed';
+  totalTickets: number;
+  prizes: LotteryPrize[];
+  winners: LotteryWinner[];
+  drawnBy?: string; // admin name
+  notes?: string;
+}
+
+export interface LotteryWinner {
+  ticketId: string;
+  ticketNumber: number;
+  customerId: string;
+  customerName?: string;
+  phone?: string;
+  plate?: string;
+  prizeId: string;
+  prizeLabel: string;
+  prizeDescription?: string;
+  claimed: boolean;
+  claimedAt?: string;
+}
+
+export interface LotterySettings {
+  enabled: boolean;
+  prizes: LotteryPrize[]; // default prize template
+  autoDrawDay?: number; // day of month for auto-reminder e.g. 28
+  welcomeMessage?: string;
 }
 
 // ==========================================

@@ -50,6 +50,7 @@ import { ExpensesModule } from '@/components/modules/ExpensesModule';
 import { InventoryModule } from '@/components/modules/InventoryModule';
 import { SystemDocsModule } from '@/components/modules/SystemDocsModule';
 import { SettingsModule } from '@/components/modules/SettingsModule';
+import { LotteryModule } from '@/components/modules/LotteryModule';
 import { CheckCircle2, LayoutDashboard, Monitor, Car, Users, DollarSign, Settings, Layers, Wrench, Menu } from 'lucide-react';
 
 export default function MainPage() {
@@ -529,6 +530,12 @@ export default function MainPage() {
               currentTheme={themeMode}
               onToggleTheme={handleToggleTheme}
               onNavigateTab={(tab) => setActiveTab(tab as TabKey)}
+            />
+          )}
+
+          {activeTab === 'lottery' && (
+            <LotteryModule
+              currentUserName={currentUser?.name}
             />
           )}
         </main>

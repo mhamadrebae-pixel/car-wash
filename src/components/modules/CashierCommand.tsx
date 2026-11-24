@@ -40,6 +40,8 @@ import {
   pullServerDatabase,
   getSavedVehicles,
   seedTodaySalesData,
+  issueLotteryTicket,
+  formatPlateDisplay,
 } from '@/lib/storage';
 import { OFFICIAL_PROVINCES, OLD_PLATE_CITIES, OLD_PLATE_CATEGORIES, UNIFIED_PLATE_LETTERS } from '@/constants/provinces';
 import { generateCarReadyMessage, openWhatsAppChat } from '@/lib/whatsapp';
@@ -690,6 +692,23 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
     );
     onUpdateVehicles(allUpdated);
 
+    // 🎟️ Issue lottery ticket for every paid wash (not debts/free)
+    if (!isFree && !isDebt) {
+      try {
+        const plateStr = checkoutVehicle.plate ? formatPlateDisplay(checkoutVehicle.plate) : undefined;
+        issueLotteryTicket({
+          washId: newRecord.id,
+          customerId: plateStr || checkoutVehicle.id,
+          customerName: checkoutVehicle.ownerName || undefined,
+          phone: checkoutVehicle.phone || undefined,
+          plate: plateStr,
+          branchId: (checkoutVehicle as any).branchId || undefined,
+        });
+      } catch {
+        // silent fail — lottery is optional
+      }
+    }
+
     // Clear bay cafe order
     if (checkoutVehicle.currentBay) {
       setBayCafeOrders((prev) => {
@@ -918,7 +937,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
       services.find((s) => s.category === 'سەیارە' || s.name.includes('شۆردنی ئاسایی')) ||
       services[0];
     const nowISO = new Date().toISOString();
-    const branchName = selectedBranch === 'branch-1' ? 'لقی ١' : 'لقی ٢';
+    const branchName = 'غەسلی دەریا';
 
     const isVip = Boolean(
       matchedExistingVehicle?.subscription?.status === 'active' &&
@@ -1341,14 +1360,7 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
   };
 
   // Active Yard Vehicles & Categorized Lists (Scoped to Active Branch)
-  const activeYardCars = vehicles.filter((v) => {
-    if (!v.washStage) return false;
-    if (activeBranchId) {
-      const vBranch = v.currentBayBranchId || v.branchId || 'branch-1';
-      return vBranch === activeBranchId;
-    }
-    return true;
-  });
+  const activeYardCars = vehicles.filter((v) => Boolean(v.washStage));
   const waitingCars = activeYardCars.filter((v) => v.washStage === 'چاوەڕوانی');
   const washingCars = activeYardCars.filter(
     (v) => v.washStage && v.washStage !== 'چاوەڕوانی' && v.washStage !== 'تەواوبوو'
@@ -1579,48 +1591,6 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl">
               {entryMode === 'car' ? 'شۆردنی سەیارە' : 'فەرش بە مەتر دووجا (م²)'}
             </span>
-          </div>
-
-          {/* Branch Selector: لقی ١ (سەرەکی) vs لقی ٢ */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedBranch('branch-1');
-                if (onSwitchBranch) onSwitchBranch('branch-1');
-                try {
-                  localStorage.setItem('carwash_active_branch', 'branch-1');
-                  localStorage.setItem('carwash_v1_active_branch', 'branch-1');
-                } catch {}
-              }}
-              className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                selectedBranch === 'branch-1'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>🏢 لقی ١ (سەرەکی)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedBranch('branch-2');
-                if (onSwitchBranch) onSwitchBranch('branch-2');
-                try {
-                  localStorage.setItem('carwash_active_branch', 'branch-2');
-                  localStorage.setItem('carwash_v1_active_branch', 'branch-2');
-                } catch {}
-              }}
-              className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                selectedBranch === 'branch-2'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>🏢 لقی ٢</span>
-            </button>
           </div>
 
           {/* Service Mode Selector: Car Wash vs Carpet & Furniture */}
@@ -2901,44 +2871,6 @@ export const CashierCommand: React.FC<CashierCommandProps> = ({
                   <span className="text-xs px-3 py-1.5 rounded-full font-black bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs font-mono self-start sm:self-center">
                     کۆی گشتی: {formatIQD(filteredSalesTotal)}
                   </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setSalesBranchFilter('all')}
-                    className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                      salesBranchFilter === 'all'
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span>هەمووی ({todaySalesList.length})</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSalesBranchFilter('branch-1')}
-                    className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                      salesBranchFilter === 'branch-1'
-                        ? 'bg-blue-600 text-white shadow-2xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span>🏢 لقی ١ ({branch1Count})</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSalesBranchFilter('branch-2')}
-                    className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                      salesBranchFilter === 'branch-2'
-                        ? 'bg-blue-600 text-white shadow-2xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span>🏢 لقی ٢ ({branch2Count})</span>
-                  </button>
                 </div>
               </div>
 

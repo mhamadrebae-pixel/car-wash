@@ -35,7 +35,7 @@ export const NfcStickerModal: React.FC<NfcStickerModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [printFormat, setPrintFormat] = useState<'card' | 'windshield'>('windshield');
 
-  const carWashName = settings?.carWashName || 'Royal Car Wash';
+  const carWashName = settings?.carWashName || 'غەسلی دەریا';
   const portalUrl = `${getPortalBaseUrl(settings)}/nfc/${vehicle.id}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(portalUrl)}&margin=1`;
 

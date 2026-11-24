@@ -147,7 +147,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ settings, onLoginSucce
           </div>
           <div>
             <h1 className="text-sm font-black tracking-tight text-white/95">
-              {settings.carWashName || 'غەسلی شاژنی ئۆتۆمبێل'}
+              {settings.carWashName || 'غەسلی دەریا'}
             </h1>
             <p className="text-[10px] text-slate-400 font-medium">سیستەمی کارگێڕیی و پێشوازی POS</p>
           </div>
@@ -186,36 +186,50 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ settings, onLoginSucce
         {/* Role Quick Reference Pills */}
         <div className="grid grid-cols-2 gap-2 w-full mb-6">
           <div
-            onClick={() => setSelectedRoleHint('cashier')}
-            className={`p-2.5 rounded-2xl border transition cursor-pointer flex items-center gap-2.5 ${
+            onClick={() => {
+              setSelectedRoleHint('cashier');
+              setPin('1234');
+            }}
+            className={`p-2.5 rounded-2xl border transition cursor-pointer flex items-center gap-2.5 active:scale-98 ${
               selectedRoleHint === 'cashier'
                 ? 'bg-blue-950/60 border-blue-500/80 shadow-md shadow-blue-500/10'
                 : 'bg-slate-900/60 hover:bg-slate-800/60 border-slate-800 text-slate-300'
             }`}
+            title="کلیک بکە بۆ چوونەژوورەوەی خێرا وەک کاشێر"
           >
             <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
               <CreditCard className="w-4 h-4" />
             </div>
-            <div className="text-right">
-              <div className="text-xs font-bold text-white">کاشێر (Cashier)</div>
-              <div className="text-[10px] text-blue-400/90 font-medium">وەرگرتن و دەرکردنی پسوولە</div>
+            <div className="text-right min-w-0">
+              <div className="text-xs font-bold text-white flex items-center gap-1">
+                <span>کاشێر</span>
+                <span className="text-[10px] font-mono px-1 rounded bg-blue-500/20 text-blue-300">1234</span>
+              </div>
+              <div className="text-[10px] text-blue-400/90 font-medium truncate">تۆمار و پسوولە</div>
             </div>
           </div>
 
           <div
-            onClick={() => setSelectedRoleHint('admin')}
-            className={`p-2.5 rounded-2xl border transition cursor-pointer flex items-center gap-2.5 ${
+            onClick={() => {
+              setSelectedRoleHint('admin');
+              setPin('9999');
+            }}
+            className={`p-2.5 rounded-2xl border transition cursor-pointer flex items-center gap-2.5 active:scale-98 ${
               selectedRoleHint === 'admin'
                 ? 'bg-purple-950/60 border-purple-500/80 shadow-md shadow-purple-500/10'
                 : 'bg-slate-900/60 hover:bg-slate-800/60 border-slate-800 text-slate-300'
             }`}
+            title="کلیک بکە بۆ چوونەژوورەوەی خێرا وەک بەڕێوەبەر"
           >
             <div className="w-8 h-8 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center shrink-0">
               <Crown className="w-4 h-4" />
             </div>
-            <div className="text-right">
-              <div className="text-xs font-bold text-white">بەڕێوەبەر (Admin)</div>
-              <div className="text-[10px] text-purple-400/90 font-medium">داشبۆرد، حسابات و ڕێکخستن</div>
+            <div className="text-right min-w-0">
+              <div className="text-xs font-bold text-white flex items-center gap-1">
+                <span>بەڕێوەبەر</span>
+                <span className="text-[10px] font-mono px-1 rounded bg-purple-500/20 text-purple-300">9999</span>
+              </div>
+              <div className="text-[10px] text-purple-400/90 font-medium truncate">داشبۆرد و حسابات</div>
             </div>
           </div>
         </div>
